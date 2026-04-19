@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decrypt } from "@/lib/crypto";
 import { triggerNextStep, failQueue } from "@/lib/pipeline/queue";
+import { decryptPdf } from "@/lib/pipeline/decrypt-pdf";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +12,8 @@ export async function POST(request: NextRequest) {
   try {
     const admin = createAdminClient();
 
-    const { data: report } = await admin.from("reports")
+    const { data: report } = await admin
+      .from("reports")
       .select("*, profile:profiles(*)")
       .eq("id", reportId)
       .single();
@@ -33,20 +35,50 @@ export async function POST(request: NextRequest) {
 
     if (!pdfData) throw new Error("Could not download PDF from storage");
 
-    // Note: PDF decryption library integration pending — pdf-lib does not support password-protected PDFs out of the box.
-    // For now, store as-is (assuming PDF is already decrypted by upstream caller, e.g. backfill upload of pre-decrypted file).
-    // For Surense PDFs which are password-protected, this step will need pdf-lib + a password unlock library, OR muhammara.
-    // TODO: integrate password decryption for production Gmail-driven flow.
-    const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
-    void decrypt; // suppress unused import warning while password integration is pending
+    const encryptedBuffer = Buffer.from(await pdfData.arrayBuffer());
+
+    // Decrypt with national_id as the PDF password.
+    // national_id is AES-256-CBC encrypted in the DB — unwrap it first.
+    const encryptionKey = process.env.ENCRYPTION_KEY!;
+    const profile = report.profile as { national_id: string } | null;
+    if (!profile?.national_id) throw new Error("Profile has no national_id");
+
+    const nationalId = decrypt(profile.national_id, encryptionKey);
+
+    let decryptedBuffer: Buffer;
+    try {
+      decryptedBuffer = await decryptPdf(encryptedBuffer, nationalId);
+    } catch (decryptError) {
+      // Graceful fallback: if decryption fails (wrong password or file is not
+      // encrypted), attempt to use the buffer as-is. This handles backfill of
+      // files that were already decrypted before being stored.
+      const errorMsg = String(decryptError);
+      const isWrongPassword = errorMsg.includes("password is incorrect");
+      const isNotEncrypted =
+        !errorMsg.includes("password") &&
+        !errorMsg.includes("encrypted");
+
+      if (isWrongPassword) {
+        // Re-throw — wrong password means we cannot proceed, no point continuing.
+        throw decryptError;
+      }
+
+      if (isNotEncrypted) {
+        // PDF opened fine but needsPassword() returned false — already plaintext.
+        decryptedBuffer = encryptedBuffer;
+      } else {
+        throw decryptError;
+      }
+    }
 
     const decryptedPath = `reports/${report.profile_id}/${report.report_date}/decrypted.pdf`;
-    await admin.storage.from("reports").upload(decryptedPath, pdfBuffer, {
+    await admin.storage.from("reports").upload(decryptedPath, decryptedBuffer, {
       contentType: "application/pdf",
       upsert: true,
     });
 
-    await admin.from("reports")
+    await admin
+      .from("reports")
       .update({ decrypted_pdf_url: decryptedPath })
       .eq("id", reportId);
 
