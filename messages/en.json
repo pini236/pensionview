@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "home": "Home",
+    "trends": "Trends",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "totalSavings": "Total Savings",
+    "monthlyChange": "Monthly Change",
+    "monthlyInsight": "Monthly Insight",
+    "projectedPension": "Projected Pension",
+    "inTodaysValues": "in today's values",
+    "perMonth": "per month",
+    "deposits": "Deposits",
+    "insurance": "Insurance",
+    "health": "Health Insurance",
+    "life": "Life Insurance",
+    "disability": "Disability Coverage",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "trends": {
+    "portfolioGrowth": "Portfolio Growth",
+    "compareFunds": "Compare Funds",
+    "returns": "Returns",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "threeYear": "36 Months",
+    "fiveYear": "60 Months",
+    "depositsBreakdown": "Deposit Breakdown"
+  },
+  "reports": {
+    "title": "Reports",
+    "detail": "Report Details",
+    "balances": "Balances",
+    "returns": "Returns",
+    "deposits": "Deposits",
+    "insurance": "Insurance"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "noData": "No data"
+  },
+  "productType": {
+    "pension": "Pension",
+    "education_fund": "Education Fund",
+    "severance_fund": "Severance Fund",
+    "investment_fund": "Investment Fund",
+    "savings_policy": "Savings Policy"
+  },
+  "login": {
+    "title": "PensionView",
+    "subtitle": "Securing today, investing for tomorrow",
+    "signIn": "Sign in with Google"
+  },
+  "settings": {
+    "language": "Language",
+    "connectGmail": "Connect Gmail",
+    "connected": "Connected",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light"
+  }
+}

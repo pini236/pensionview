@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "home": "ראשי",
+    "trends": "מגמות",
+    "reports": "דוחות",
+    "settings": "הגדרות"
+  },
+  "dashboard": {
+    "totalSavings": "סך החסכונות",
+    "monthlyChange": "שינוי חודשי",
+    "monthlyInsight": "תובנה חודשית",
+    "projectedPension": "קצבה חזויה",
+    "inTodaysValues": "בערכי היום",
+    "perMonth": "לחודש",
+    "deposits": "הפקדות",
+    "insurance": "ביטוח",
+    "health": "ביטוח בריאות",
+    "life": "ביטוח חיים",
+    "disability": "אובדן כושר עבודה",
+    "active": "קיים",
+    "inactive": "לא קיים"
+  },
+  "trends": {
+    "portfolioGrowth": "צמיחת תיק",
+    "compareFunds": "השווה קרנות",
+    "returns": "תשואות",
+    "monthly": "חודשי",
+    "yearly": "שנתי",
+    "threeYear": "36 חודשים",
+    "fiveYear": "60 חודשים",
+    "depositsBreakdown": "פילוח הפקדות"
+  },
+  "reports": {
+    "title": "דוחות",
+    "detail": "פרטי דוח",
+    "balances": "יתרות",
+    "returns": "תשואות",
+    "deposits": "הפקדות",
+    "insurance": "ביטוח"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "retry": "נסה שוב",
+    "noData": "אין נתונים"
+  },
+  "productType": {
+    "pension": "פנסיה",
+    "education_fund": "קרן השתלמות",
+    "severance_fund": "גמל",
+    "investment_fund": "גמל להשקעה",
+    "savings_policy": "פוליסת חיסכון"
+  },
+  "login": {
+    "title": "PensionView",
+    "subtitle": "מבטחים את היום, משקיעים למחר",
+    "signIn": "התחבר עם Google"
+  },
+  "settings": {
+    "language": "שפה",
+    "connectGmail": "חבר Gmail",
+    "connected": "מחובר",
+    "theme": "מצב תצוגה",
+    "dark": "כהה",
+    "light": "בהיר"
+  }
+}
