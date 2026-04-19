@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useRouter, usePathname } from "next/navigation";
-import { Globe, Mail, Sun, Moon } from "lucide-react";
+import { Globe, Mail, Sun, Moon, Upload } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
@@ -122,6 +123,24 @@ export default function SettingsPage() {
             {t("connectGmail")}
           </button>
         )}
+      </section>
+
+      <section className="rounded-xl bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
+          <Upload size={18} className="text-text-muted" />
+          {locale === "he" ? "טעינת דוחות ידנית" : "Manual report upload"}
+        </div>
+        <p className="mb-3 text-xs text-text-muted">
+          {locale === "he"
+            ? "העלה דוחות PDF מהעבר כדי להציג היסטוריה ומגמות. הקבצים חייבים להיות ללא הצפנה."
+            : "Upload past PDF reports to populate history and trends. Files must be already decrypted."}
+        </p>
+        <Link
+          href={`/${locale}/admin/backfill`}
+          className="inline-block rounded-lg bg-background px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface-hover cursor-pointer"
+        >
+          {locale === "he" ? "טען דוחות" : "Upload reports"}
+        </Link>
       </section>
     </div>
   );

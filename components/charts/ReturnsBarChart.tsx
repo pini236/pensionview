@@ -51,7 +51,7 @@ export function ReturnsBarChart({ funds }: ReturnsBarChartProps) {
       />
       <div className="h-72 lg:h-80 rounded-xl bg-surface p-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 60, bottom: 8, left: 8 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 56, bottom: 8, left: 56 }}>
             <XAxis type="number" stroke="#94A3B8" fontSize={11} tickFormatter={(v) => formatPercent(v, fullLocale)} />
             <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={11} width={140} />
             <Tooltip
@@ -62,10 +62,22 @@ export function ReturnsBarChart({ funds }: ReturnsBarChartProps) {
             <Bar dataKey="value" radius={[0, 4, 4, 0]} minPointSize={2}>
               <LabelList
                 dataKey="value"
-                position="right"
-                fontSize={11}
-                fill="#F8FAFC"
-                formatter={(v: React.ReactNode) => formatPercent(Number(v), fullLocale)}
+                content={(props) => {
+                  const { x, y, width, height, value } = props as {
+                    x: number; y: number; width: number; height: number; value: number;
+                  };
+                  if (value == null) return null;
+                  const isNegative = value < 0;
+                  // Bar's "right edge" is x+width for positive, x for negative
+                  const labelX = isNegative ? x - 6 : x + width + 6;
+                  const anchor: "start" | "end" = isNegative ? "end" : "start";
+                  return (
+                    <text x={labelX} y={y + height / 2} dy={4}
+                      textAnchor={anchor} fill="#F8FAFC" fontSize={11}>
+                      {formatPercent(value, fullLocale)}
+                    </text>
+                  );
+                }}
               />
               {data.map((d, i) => (
                 <Cell key={i} fill={FUND_COLORS[d.type]} />
