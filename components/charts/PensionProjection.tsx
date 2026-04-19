@@ -17,7 +17,7 @@ export function PensionProjection({ projectedFull, projectedBase, currentAge }: 
 
   if (currentAge === null) {
     return (
-      <div className="rounded-xl bg-surface p-5 text-center">
+      <div className="relative overflow-hidden rounded-xl border border-white/5 bg-surface/80 p-5 text-center backdrop-blur-xl">
         <p className="text-sm text-text-muted">{locale === "he" ? "הוסף תאריך לידה בהגדרות לתחזית קצבה" : "Add your date of birth in Settings to see your pension projection"}</p>
       </div>
     );
@@ -27,7 +27,7 @@ export function PensionProjection({ projectedFull, projectedBase, currentAge }: 
   const progress = Math.min(100, Math.max(0, (currentAge / retirementAge) * 100));
 
   return (
-    <div className="rounded-xl bg-surface p-5">
+    <div className="relative overflow-hidden rounded-xl border border-white/5 bg-surface/80 p-5 backdrop-blur-xl">
       <div className="mb-4">
         <p className="text-sm text-text-muted">{t("projectedPension")}</p>
         <p className="mt-1 text-3xl font-medium text-text-primary">

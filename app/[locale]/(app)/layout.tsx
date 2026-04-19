@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { TopBar } from "@/components/nav/TopBar";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { AnimatedBackground } from "@/components/background/AnimatedBackground";
+import { FloatingParticles } from "@/components/background/FloatingParticles";
 
 export default async function AppLayout({
   children,
@@ -23,6 +24,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen pb-20 pt-14 lg:pb-0 lg:pt-0">
       <AnimatedBackground />
+      <FloatingParticles />
       <TopBar />
       <Sidebar />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 lg:ms-60 lg:px-12 lg:pb-8 lg:pt-8">

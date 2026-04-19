@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { clsx } from "clsx";
 import { useLocale } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 
@@ -63,25 +64,41 @@ export function PeriodDeltaHero({
   const previousWidthPct = (previousTotal / maxValue) * 100;
   const currentWidthPct = (currentTotal / maxValue) * 100;
 
+  const glow = isGain
+    ? "shadow-[0_0_50px_-20px_rgba(34,197,94,0.4)]"
+    : "shadow-[0_0_50px_-20px_rgba(245,158,11,0.4)]";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-2xl bg-surface p-6 lg:p-8"
+      className={clsx("relative overflow-hidden rounded-2xl bg-surface p-6 lg:p-8", glow)}
     >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-center">
+      {/* One-shot shine sweep on mount */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+        initial={{ x: "-100%" }}
+        animate={{ x: "200%" }}
+        transition={{ duration: 1.6, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
+      />
+      <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-center">
         <div>
           <p className="text-sm text-text-muted">{eyebrow}</p>
-          <p
-            className={`mt-2 text-5xl font-semibold leading-tight tabular-nums lg:text-6xl ${
-              isGain ? "text-gain" : "text-loss"
-            }`}
-          >
-            <bdi>
-              {isGain ? "+" : "-"}
-              {formatCurrency(Math.abs(delta), fullLocale)}
-            </bdi>
+          <p className="mt-2 text-5xl font-semibold leading-tight tabular-nums lg:text-6xl">
+            <span
+              className={clsx(
+                "bg-gradient-to-br bg-clip-text text-transparent",
+                isGain
+                  ? "from-gain via-gain to-[#16a34a]"
+                  : "from-loss via-loss to-[#ea580c]"
+              )}
+            >
+              <bdi>
+                {isGain ? "+" : "-"}
+                {formatCurrency(Math.abs(delta), fullLocale)}
+              </bdi>
+            </span>
           </p>
           <p className="mt-3 text-sm text-text-muted">
             <bdi>{subline}</bdi>

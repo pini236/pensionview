@@ -2,6 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { HeroCard } from "@/components/cards/HeroCard";
 import { FundCardGrid } from "@/components/cards/FundCardGrid";
 import { InsuranceSummary } from "@/components/cards/InsuranceSummary";
+import { InsightCard } from "@/components/cards/InsightCard";
 import { PensionProjection } from "@/components/charts/PensionProjection";
 import type { ProductType } from "@/lib/types";
 
@@ -77,13 +78,7 @@ export default async function DashboardPage() {
 
       {insight && (
         <div className="lg:col-span-4 xl:col-span-5">
-          <div className="rounded-xl border border-gain/20 bg-surface p-4 h-full">
-            <div className="mb-2 flex items-center gap-2 text-sm text-gain">
-              <span>&#10024;</span>
-              <span className="font-medium">תובנה חודשית</span>
-            </div>
-            <p className="text-sm leading-relaxed text-text-primary">{insight.summary_text}</p>
-          </div>
+          <InsightCard text={insight.summary_text} label="תובנה חודשית" />
         </div>
       )}
 
