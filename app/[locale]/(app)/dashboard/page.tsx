@@ -1,6 +1,8 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { HeroCard } from "@/components/cards/HeroCard";
 import { FundCard } from "@/components/cards/FundCard";
+import { InsuranceSummary } from "@/components/cards/InsuranceSummary";
+import { PensionProjection } from "@/components/charts/PensionProjection";
 import type { ProductType } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -88,6 +90,21 @@ export default async function DashboardPage() {
           />
         ))}
       </div>
+
+      {summary && summary.projected_pension_full !== null && (
+        <PensionProjection
+          projectedFull={summary.projected_pension_full || 0}
+          projectedBase={summary.projected_pension_base || 0}
+        />
+      )}
+
+      {summary && (
+        <InsuranceSummary
+          healthExists={summary.health_insurance_exists ?? false}
+          lifeAmount={summary.life_insurance_amount || 0}
+          disabilityAmount={summary.disability_coverage_amount || 0}
+        />
+      )}
     </div>
   );
 }
