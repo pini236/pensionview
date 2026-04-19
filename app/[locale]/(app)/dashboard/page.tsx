@@ -1,6 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { HeroCard } from "@/components/cards/HeroCard";
-import { FundCard } from "@/components/cards/FundCard";
+import { FundCardGrid } from "@/components/cards/FundCardGrid";
 import { InsuranceSummary } from "@/components/cards/InsuranceSummary";
 import { PensionProjection } from "@/components/charts/PensionProjection";
 import type { ProductType } from "@/lib/types";
@@ -87,17 +87,17 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="lg:col-span-8 xl:col-span-8 space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-3">
-        {savings?.map((fund) => (
-          <FundCard
-            key={fund.id}
-            provider={fund.provider}
-            productName={fund.product_name}
-            productType={fund.product_type as ProductType}
-            balance={fund.balance || 0}
-            monthlyReturnPct={fund.monthly_return_pct}
-          />
-        ))}
+      <div className="lg:col-span-8 xl:col-span-8">
+        <FundCardGrid
+          funds={(savings || []).map((fund) => ({
+            id: fund.id,
+            provider: fund.provider,
+            product_name: fund.product_name,
+            product_type: fund.product_type as ProductType,
+            balance: fund.balance,
+            monthly_return_pct: fund.monthly_return_pct,
+          }))}
+        />
       </div>
 
       <aside className="lg:col-span-4 xl:col-span-4 space-y-4">

@@ -2,13 +2,19 @@
 
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { Settings } from "lucide-react";
 
 export function TopBar() {
   const locale = useLocale();
 
   return (
-    <header className="fixed top-0 start-0 end-0 z-50 border-b border-surface bg-background/95 backdrop-blur-sm lg:hidden">
+    <motion.header
+      initial={{ y: -56, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+      className="fixed top-0 start-0 end-0 z-50 border-b border-surface bg-background/95 backdrop-blur-sm lg:hidden"
+    >
       <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
         <h1 className="text-lg font-semibold text-text-primary">PensionView</h1>
         <Link
@@ -18,6 +24,6 @@ export function TopBar() {
           <Settings size={22} />
         </Link>
       </div>
-    </header>
+    </motion.header>
   );
 }
