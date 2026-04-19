@@ -109,6 +109,27 @@ export default function SettingsPage() {
 
       <section className="rounded-xl bg-surface p-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
+          <Cake size={18} className="text-text-muted" />
+          {locale === "he" ? "תאריך לידה" : "Date of birth"}
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="date"
+            value={dob}
+            onChange={(e) => onDobChange(e.target.value)}
+            className="rounded-lg bg-background px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-cta"
+          />
+          <span
+            className={`text-xs text-gain transition-opacity duration-300 ${dobSaved ? "opacity-100" : "opacity-0"}`}
+            aria-live="polite"
+          >
+            {locale === "he" ? "✓ נשמר" : "✓ saved"}
+          </span>
+        </div>
+      </section>
+
+      <section className="rounded-xl bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
           {mounted && theme === "dark" ? <Moon size={18} className="text-text-muted" /> : <Sun size={18} className="text-text-muted" />}
           {t("theme")}
         </div>
