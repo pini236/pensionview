@@ -55,12 +55,13 @@ export function useActiveMember(members: Member[]): {
 
   const setActive = useCallback(
     (id: string | "all") => {
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
-      if (id === "all") {
-        params.set("member", "all");
-      } else {
-        params.set("member", id);
+      // Persist to cookie so navigation between tabs (which drops query params)
+      // still respects the user's selection. Server reads URL > cookie > self.
+      if (typeof document !== "undefined") {
+        document.cookie = `pv_active_member=${id}; path=/; samesite=lax; max-age=31536000`;
       }
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("member", id);
       const qs = params.toString();
       router.push(`${pathname}${qs ? `?${qs}` : ""}`);
     },
