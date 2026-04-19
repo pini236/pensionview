@@ -18,9 +18,18 @@ export async function POST(request: NextRequest) {
 
     if (!report) throw new Error("Report not found");
 
+    // Backfill: file is already decrypted and stored at decrypted_pdf_url. Skip the work.
+    if (!report.raw_pdf_url && report.decrypted_pdf_url) {
+      await triggerNextStep(reportId, "decrypt", pageCount);
+      return NextResponse.json({ ok: true, skipped: "already decrypted" });
+    }
+
+    const sourcePath = report.raw_pdf_url;
+    if (!sourcePath) throw new Error("No PDF source path on report");
+
     const { data: pdfData } = await admin.storage
       .from("reports")
-      .download(report.raw_pdf_url!);
+      .download(sourcePath);
 
     if (!pdfData) throw new Error("Could not download PDF from storage");
 

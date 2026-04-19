@@ -21,21 +21,33 @@ interface ExtractedPage {
 export async function validateAndStore(reportId: string, pages: ExtractedPage[]) {
   const admin = createAdminClient();
 
+  // Merge summary fields across all pages — different pages contribute different fields,
+  // so we keep the first non-null value for each field instead of overwriting.
+  const mergedSummary: Record<string, unknown> = {};
   for (const page of pages) {
-    if (page.summary) {
-      await admin.from("report_summary").upsert({
-        report_id: reportId,
-        total_savings: page.summary.total_savings ?? null,
-        total_equity: page.summary.total_equity ?? null,
-        monthly_deposits: page.summary.monthly_deposits ?? null,
-        projected_pension_full: page.summary.projected_pension_full ?? null,
-        projected_pension_base: page.summary.projected_pension_base ?? null,
-        disability_coverage_amount: page.summary.disability_coverage_amount ?? null,
-        life_insurance_amount: page.summary.life_insurance_amount ?? null,
-        health_insurance_exists: page.summary.health_insurance_exists ?? false,
-      }, { onConflict: "report_id" });
+    if (!page.summary) continue;
+    for (const [key, value] of Object.entries(page.summary)) {
+      if (value !== null && value !== undefined && mergedSummary[key] == null) {
+        mergedSummary[key] = value;
+      }
     }
+  }
 
+  if (Object.keys(mergedSummary).length > 0) {
+    await admin.from("report_summary").upsert({
+      report_id: reportId,
+      total_savings: (mergedSummary.total_savings as number) ?? null,
+      total_equity: (mergedSummary.total_equity as number) ?? null,
+      monthly_deposits: (mergedSummary.monthly_deposits as number) ?? null,
+      projected_pension_full: (mergedSummary.projected_pension_full as number) ?? null,
+      projected_pension_base: (mergedSummary.projected_pension_base as number) ?? null,
+      disability_coverage_amount: (mergedSummary.disability_coverage_amount as number) ?? null,
+      life_insurance_amount: (mergedSummary.life_insurance_amount as number) ?? null,
+      health_insurance_exists: (mergedSummary.health_insurance_exists as boolean) ?? false,
+    }, { onConflict: "report_id" });
+  }
+
+  for (const page of pages) {
     if (page.savings_products) {
       for (const sp of page.savings_products) {
         await admin.from("savings_products").insert({
