@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { PortfolioChart } from "@/components/charts/PortfolioChart";
 import { ReturnsBarChart } from "@/components/charts/ReturnsBarChart";
+import { DepositsDonut } from "@/components/charts/DepositsDonut";
 import type { ProductType } from "@/lib/types";
 
 export default async function TrendsPage() {
@@ -62,6 +63,18 @@ export default async function TrendsPage() {
     }));
   }
 
+  const deposits = (latestReport ? (await supabase.from("savings_products")
+    .select("product_name, product_type, monthly_deposit")
+    .eq("report_id", latestReport.id)).data : null) || [];
+
+  const depositSlices = deposits.map((d) => ({
+    productName: d.product_name,
+    productType: d.product_type as ProductType,
+    amount: d.monthly_deposit ?? 0,
+  })).filter((d) => d.amount > 0);
+
+  const totalDeposits = depositSlices.reduce((sum, d) => sum + d.amount, 0);
+
   return (
     <div className="space-y-8">
       <section>
@@ -73,6 +86,13 @@ export default async function TrendsPage() {
         <h2 className="mb-3 text-lg font-medium text-text-primary">תשואות לפי קרן</h2>
         <ReturnsBarChart funds={funds} />
       </section>
+
+      {depositSlices.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-medium text-text-primary">פילוח הפקדות</h2>
+          <DepositsDonut deposits={depositSlices} total={totalDeposits} />
+        </section>
+      )}
     </div>
   );
 }
