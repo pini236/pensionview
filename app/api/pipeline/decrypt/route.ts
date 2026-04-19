@@ -20,13 +20,11 @@ export async function POST(request: NextRequest) {
 
     if (!report) throw new Error("Report not found");
 
-    // Backfill: file is already decrypted and stored at decrypted_pdf_url. Skip the work.
-    if (!report.raw_pdf_url && report.decrypted_pdf_url) {
-      await triggerNextStep(reportId, "decrypt", pageCount);
-      return NextResponse.json({ ok: true, skipped: "already decrypted" });
-    }
-
-    const sourcePath = report.raw_pdf_url;
+    // Always run mupdf — it's idempotent. Plaintext PDFs pass through unchanged;
+    // encrypted PDFs get decrypted with the national_id password.
+    // Source path: prefer raw_pdf_url (Gmail flow) but fall back to decrypted_pdf_url
+    // (backfill flow stores at this path even when the uploaded file is still encrypted).
+    const sourcePath = report.raw_pdf_url ?? report.decrypted_pdf_url;
     if (!sourcePath) throw new Error("No PDF source path on report");
 
     const { data: pdfData } = await admin.storage
