@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useRouter, usePathname } from "next/navigation";
-import { Globe, Mail, Sun, Moon, Upload } from "lucide-react";
+import { Cake, Globe, Mail, Sun, Moon, Upload } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,23 +16,58 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [gmailConnected, setGmailConnected] = useState<boolean | null>(null);
+  const [dob, setDob] = useState<string>("");
+  const [dobSaved, setDobSaved] = useState(false);
+  const dobSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dobSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    const checkConnection = async () => {
+    const loadProfile = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.email) return;
 
       const { data } = await supabase.from("profiles")
-        .select("google_access_token")
+        .select("google_access_token, date_of_birth")
         .eq("email", user.email)
         .single();
 
       setGmailConnected(!!data?.google_access_token);
+      if (data?.date_of_birth) setDob(data.date_of_birth);
     };
-    checkConnection();
+    loadProfile();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (dobSaveTimer.current) clearTimeout(dobSaveTimer.current);
+      if (dobSavedTimer.current) clearTimeout(dobSavedTimer.current);
+    };
+  }, []);
+
+  function onDobChange(value: string) {
+    setDob(value);
+    setDobSaved(false);
+
+    if (dobSaveTimer.current) clearTimeout(dobSaveTimer.current);
+    dobSaveTimer.current = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ date_of_birth: value || null })
+        .eq("email", user.email);
+
+      if (!error) {
+        setDobSaved(true);
+        if (dobSavedTimer.current) clearTimeout(dobSavedTimer.current);
+        dobSavedTimer.current = setTimeout(() => setDobSaved(false), 1500);
+      }
+    }, 300);
+  }
 
   function switchLanguage(newLocale: "he" | "en") {
     const newPath = pathname.replace(/^\/(he|en)/, `/${newLocale}`);

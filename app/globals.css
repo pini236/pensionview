@@ -31,3 +31,11 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
 }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+[dir="rtl"] .before\:animate-\[shimmer_1\.5s_infinite\]::before {
+  animation-direction: reverse;
+}

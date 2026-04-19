@@ -52,6 +52,7 @@ export interface Profile {
   google_access_token: string | null;
   google_refresh_token: string | null;
   google_token_expiry: string | null;
+  date_of_birth: string | null;
   created_at: string;
 }
 

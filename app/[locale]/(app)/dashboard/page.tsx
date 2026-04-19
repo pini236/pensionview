@@ -10,11 +10,16 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase.from("profiles")
-    .select("id")
+    .select("id, date_of_birth")
     .eq("email", user!.email!)
     .single();
 
   if (!profile) return <div className="text-text-muted">Profile not found</div>;
+
+  const dob = profile.date_of_birth;
+  const currentAge = dob
+    ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
 
   const { data: latestReport } = await supabase.from("reports")
     .select("id, report_date")
@@ -100,6 +105,7 @@ export default async function DashboardPage() {
           <PensionProjection
             projectedFull={summary.projected_pension_full || 0}
             projectedBase={summary.projected_pension_base || 0}
+            currentAge={currentAge}
           />
         )}
 

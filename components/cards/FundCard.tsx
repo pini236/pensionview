@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useLocale } from "next-intl";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type { ProductType } from "@/lib/types";
@@ -19,7 +20,13 @@ export function FundCard({ provider, productName, productType, balance, monthlyR
   const color = FUND_COLORS[productType];
 
   return (
-    <div className="flex items-stretch gap-0 rounded-lg bg-surface transition-colors hover:bg-surface-hover cursor-pointer">
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.01 }}
+      className="flex items-stretch gap-0 rounded-lg bg-surface transition-colors hover:bg-surface-hover cursor-pointer"
+    >
       <div className="w-1 rounded-s-lg" style={{ backgroundColor: color }} />
       <div className="flex flex-1 items-center justify-between p-4">
         <div className="min-w-0">
@@ -37,6 +44,6 @@ export function FundCard({ provider, productName, productType, balance, monthlyR
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

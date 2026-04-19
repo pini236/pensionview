@@ -6,14 +6,22 @@ import { formatCurrency } from "@/lib/format";
 interface PensionProjectionProps {
   projectedFull: number;
   projectedBase: number;
-  // For now, use a simple progress bar from "today" to retirement (67)
-  currentAge?: number;
+  // Current age computed from the user's DOB. `null` means DOB is not set.
+  currentAge: number | null;
 }
 
-export function PensionProjection({ projectedFull, projectedBase, currentAge = 41 }: PensionProjectionProps) {
+export function PensionProjection({ projectedFull, projectedBase, currentAge }: PensionProjectionProps) {
   const t = useTranslations("dashboard");
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
+
+  if (currentAge === null) {
+    return (
+      <div className="rounded-xl bg-surface p-5 text-center">
+        <p className="text-sm text-text-muted">{locale === "he" ? "הוסף תאריך לידה בהגדרות לתחזית קצבה" : "Add your date of birth in Settings to see your pension projection"}</p>
+      </div>
+    );
+  }
 
   const retirementAge = 67;
   const progress = Math.min(100, Math.max(0, (currentAge / retirementAge) * 100));
