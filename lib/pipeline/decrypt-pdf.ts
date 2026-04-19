@@ -35,9 +35,9 @@ export async function decryptPdf(
     throw new Error("Document is not a PDF — cannot decrypt");
   }
 
-  // saveToBuffer with no options produces an unencrypted PDF.
-  // MuPDF does not re-apply encryption unless you explicitly pass encrypt options.
-  const mupdfBuffer = pdfDoc.saveToBuffer();
+  // Explicitly strip encryption — without "decrypted" option, mupdf preserves
+  // the encryption metadata and Claude's PDF parser still rejects the file.
+  const mupdfBuffer = pdfDoc.saveToBuffer("decrypt=yes,garbage=yes,sanitize=yes");
   const output = Buffer.from(mupdfBuffer.asUint8Array());
 
   mupdfBuffer.destroy();
