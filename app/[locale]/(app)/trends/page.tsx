@@ -25,7 +25,11 @@ export default async function TrendsPage() {
   const portfolioData = (reports || [])
     .map((r) => ({
       date: r.report_date,
-      value: (r.report_summary as { total_savings: number | null }[] | null)?.[0]?.total_savings ?? 0,
+      value: (() => {
+        const raw = r.report_summary as { total_savings: number | null } | { total_savings: number | null }[] | null;
+        const summary = Array.isArray(raw) ? raw[0] : raw;
+        return summary?.total_savings ?? 0;
+      })(),
     }))
     .filter((d) => d.value > 0);
 

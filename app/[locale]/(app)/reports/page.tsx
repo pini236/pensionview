@@ -42,7 +42,8 @@ export default async function ReportsPage() {
           <h2 className="mb-3 text-sm font-medium text-text-muted">{year}</h2>
           <div className="space-y-2">
             {grouped[year]!.map((report) => {
-              const summary = (report.report_summary as { total_savings: number | null }[] | null)?.[0];
+              const summaryRaw = report.report_summary as { total_savings: number | null } | { total_savings: number | null }[] | null;
+              const summary = Array.isArray(summaryRaw) ? summaryRaw[0] : summaryRaw;
               const total = summary?.total_savings ?? 0;
               return (
                 <Link
