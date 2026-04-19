@@ -17,7 +17,7 @@ export function BottomNav() {
   const locale = useLocale();
 
   return (
-    <nav className="fixed bottom-0 start-0 end-0 z-50 border-t border-surface bg-background/95 backdrop-blur-sm">
+    <nav className="fixed bottom-0 start-0 end-0 z-50 border-t border-surface bg-background/95 backdrop-blur-sm lg:hidden">
       <div className="mx-auto flex max-w-lg items-center justify-around py-2">
         {tabs.map(({ key, href, icon: Icon }) => {
           const fullHref = `/${locale}${href}`;

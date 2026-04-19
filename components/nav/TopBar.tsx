@@ -8,7 +8,7 @@ export function TopBar() {
   const locale = useLocale();
 
   return (
-    <header className="fixed top-0 start-0 end-0 z-50 border-b border-surface bg-background/95 backdrop-blur-sm">
+    <header className="fixed top-0 start-0 end-0 z-50 border-b border-surface bg-background/95 backdrop-blur-sm lg:hidden">
       <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
         <h1 className="text-lg font-semibold text-text-primary">PensionView</h1>
         <Link

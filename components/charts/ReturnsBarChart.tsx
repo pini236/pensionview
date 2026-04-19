@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocale } from "next-intl";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, LabelList } from "recharts";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { formatPercent } from "@/lib/format";
 import { FUND_COLORS } from "@/lib/types";
@@ -49,9 +49,9 @@ export function ReturnsBarChart({ funds }: ReturnsBarChartProps) {
         value={period}
         onChange={setPeriod}
       />
-      <div className="h-72 rounded-xl bg-surface p-4">
+      <div className="h-72 lg:h-80 rounded-xl bg-surface p-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical">
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 60, bottom: 8, left: 8 }}>
             <XAxis type="number" stroke="#94A3B8" fontSize={11} tickFormatter={(v) => formatPercent(v, fullLocale)} />
             <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={11} width={140} />
             <Tooltip
@@ -59,7 +59,14 @@ export function ReturnsBarChart({ funds }: ReturnsBarChartProps) {
               labelStyle={{ color: "#F8FAFC" }}
               formatter={(value) => [formatPercent(Number(value), fullLocale), ""]}
             />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} minPointSize={2}>
+              <LabelList
+                dataKey="value"
+                position="right"
+                fontSize={11}
+                fill="#F8FAFC"
+                formatter={(v: React.ReactNode) => formatPercent(Number(v), fullLocale)}
+              />
               {data.map((d, i) => (
                 <Cell key={i} fill={FUND_COLORS[d.type]} />
               ))}

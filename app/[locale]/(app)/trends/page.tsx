@@ -80,8 +80,8 @@ export default async function TrendsPage() {
   const totalDeposits = depositSlices.reduce((sum, d) => sum + d.amount, 0);
 
   return (
-    <div className="space-y-8">
-      <section>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <section className="lg:col-span-2">
         <h2 className="mb-3 text-lg font-medium text-text-primary">צמיחת תיק</h2>
         <PortfolioChart data={portfolioData} />
       </section>

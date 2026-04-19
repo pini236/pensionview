@@ -60,25 +60,29 @@ export default async function DashboardPage() {
     .maybeSingle();
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
       {summary && (
-        <HeroCard
-          totalSavings={summary.total_savings || 0}
-          previousTotalSavings={previousSummary?.total_savings || null}
-        />
-      )}
-
-      {insight && (
-        <div className="rounded-xl border border-gain/20 bg-surface p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm text-gain">
-            <span>&#10024;</span>
-            <span className="font-medium">תובנה חודשית</span>
-          </div>
-          <p className="text-sm leading-relaxed text-text-primary">{insight.summary_text}</p>
+        <div className="lg:col-span-8 xl:col-span-7">
+          <HeroCard
+            totalSavings={summary.total_savings || 0}
+            previousTotalSavings={previousSummary?.total_savings || null}
+          />
         </div>
       )}
 
-      <div className="space-y-2">
+      {insight && (
+        <div className="lg:col-span-4 xl:col-span-5">
+          <div className="rounded-xl border border-gain/20 bg-surface p-4 h-full">
+            <div className="mb-2 flex items-center gap-2 text-sm text-gain">
+              <span>&#10024;</span>
+              <span className="font-medium">תובנה חודשית</span>
+            </div>
+            <p className="text-sm leading-relaxed text-text-primary">{insight.summary_text}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="lg:col-span-8 xl:col-span-8 space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-3">
         {savings?.map((fund) => (
           <FundCard
             key={fund.id}
@@ -91,20 +95,22 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {summary && summary.projected_pension_full !== null && (
-        <PensionProjection
-          projectedFull={summary.projected_pension_full || 0}
-          projectedBase={summary.projected_pension_base || 0}
-        />
-      )}
+      <aside className="lg:col-span-4 xl:col-span-4 space-y-4">
+        {summary && summary.projected_pension_full !== null && (
+          <PensionProjection
+            projectedFull={summary.projected_pension_full || 0}
+            projectedBase={summary.projected_pension_base || 0}
+          />
+        )}
 
-      {summary && (
-        <InsuranceSummary
-          healthExists={summary.health_insurance_exists ?? false}
-          lifeAmount={summary.life_insurance_amount || 0}
-          disabilityAmount={summary.disability_coverage_amount || 0}
-        />
-      )}
+        {summary && (
+          <InsuranceSummary
+            healthExists={summary.health_insurance_exists ?? false}
+            lifeAmount={summary.life_insurance_amount || 0}
+            disabilityAmount={summary.disability_coverage_amount || 0}
+          />
+        )}
+      </aside>
     </div>
   );
 }
