@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Cake, Globe, Mail, Sun, Moon, Upload } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { HouseholdSection } from "@/components/members/HouseholdSection";
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
@@ -106,6 +107,8 @@ export default function SettingsPage() {
           </button>
         </div>
       </section>
+
+      <HouseholdSection />
 
       <section className="rounded-xl bg-surface p-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">

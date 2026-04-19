@@ -2,8 +2,9 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { useLocale } from "next-intl";
+import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import type { ProductType } from "@/lib/types";
+import type { Member, ProductType } from "@/lib/types";
 import { FUND_COLORS } from "@/lib/types";
 
 interface FundCardProps {
@@ -12,9 +13,11 @@ interface FundCardProps {
   productType: ProductType;
   balance: number;
   monthlyReturnPct: number | null;
+  /** Optional member chip in the corner (used in combined household view). */
+  member?: Pick<Member, "name" | "avatar_color"> | null;
 }
 
-export function FundCard({ provider, productName, productType, balance, monthlyReturnPct }: FundCardProps) {
+export function FundCard({ provider, productName, productType, balance, monthlyReturnPct, member }: FundCardProps) {
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const color = FUND_COLORS[productType];
@@ -58,10 +61,13 @@ export function FundCard({ provider, productName, productType, balance, monthlyR
           boxShadow: `0 0 20px -2px ${color}`,
         }}
       />
-      <div className="flex flex-1 items-center justify-between p-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-text-primary">{productName}</p>
-          <p className="text-xs text-text-muted">{provider}</p>
+      <div className="flex flex-1 items-center justify-between gap-3 p-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {member && <MemberAvatar member={member} size="sm" />}
+            <p className="truncate text-sm font-medium text-text-primary">{productName}</p>
+          </div>
+          <p className="mt-0.5 text-xs text-text-muted">{provider}</p>
         </div>
         <div className="text-end">
           <p className="text-sm font-medium text-text-primary">

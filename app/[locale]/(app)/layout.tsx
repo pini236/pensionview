@@ -5,6 +5,7 @@ import { TopBar } from "@/components/nav/TopBar";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { AnimatedBackground } from "@/components/background/AnimatedBackground";
 import { FloatingParticles } from "@/components/background/FloatingParticles";
+import { getActiveMember } from "@/lib/active-member";
 
 export default async function AppLayout({
   children,
@@ -21,12 +22,17 @@ export default async function AppLayout({
     redirect(`/${locale}/login`);
   }
 
+  // Resolve household members once at the layout level so the switcher in both
+  // TopBar and Sidebar shares the same data source.
+  const active = await getActiveMember({});
+  const members = active.members;
+
   return (
     <div className="min-h-screen pb-20 pt-14 lg:pb-0 lg:pt-0">
       <AnimatedBackground />
       <FloatingParticles />
-      <TopBar />
-      <Sidebar />
+      <TopBar members={members} />
+      <Sidebar members={members} />
       <main className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 lg:ms-60 lg:px-12 lg:pb-8 lg:pt-8">
         {children}
       </main>

@@ -18,7 +18,8 @@
     "life": "Life Insurance",
     "disability": "Disability Coverage",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "totalBalance": "Total balance"
   },
   "trends": {
     "portfolioGrowth": "Portfolio Growth",
@@ -63,5 +64,24 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light"
+  },
+  "household": {
+    "title": "Household",
+    "add": "Add member",
+    "edit": "Edit member",
+    "manage": "Manage",
+    "allMembers": "All household",
+    "archive": "Archive",
+    "noArchive": "No archived members",
+    "restore": "Restore",
+    "deleteConfirm": "Remove {name}? Historical data will be preserved"
+  },
+  "relationship": {
+    "self": "Self",
+    "spouse": "Spouse",
+    "child": "Child",
+    "parent": "Parent",
+    "sibling": "Sibling",
+    "other": "Other"
   }
 }

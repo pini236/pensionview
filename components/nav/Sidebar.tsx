@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Home, TrendingUp, FileText, Settings } from "lucide-react";
+import { MemberSwitcher } from "@/components/members/MemberSwitcher";
+import type { Member } from "@/lib/types";
 
 const tabs = [
   { key: "home", href: "/dashboard", icon: Home },
@@ -13,7 +15,11 @@ const tabs = [
   { key: "settings", href: "/settings", icon: Settings },
 ] as const;
 
-export function Sidebar() {
+interface SidebarProps {
+  members: Member[];
+}
+
+export function Sidebar({ members }: SidebarProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const locale = useLocale();
@@ -24,9 +30,12 @@ export function Sidebar() {
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
-        className="px-6 py-5"
+        className="px-4 py-5"
       >
-        <h1 className="text-xl font-semibold text-text-primary">PensionView</h1>
+        <h1 className="px-2 text-base font-semibold text-text-primary mb-3">
+          PensionView
+        </h1>
+        <MemberSwitcher members={members} variant="full" />
       </motion.div>
       <nav className="flex flex-col gap-1 px-3">
         {tabs.map(({ key, href, icon: Icon }) => {

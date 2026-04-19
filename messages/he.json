@@ -18,7 +18,8 @@
     "life": "ביטוח חיים",
     "disability": "אובדן כושר עבודה",
     "active": "קיים",
-    "inactive": "לא קיים"
+    "inactive": "לא קיים",
+    "totalBalance": "יתרה כוללת"
   },
   "trends": {
     "portfolioGrowth": "צמיחת תיק",
@@ -63,5 +64,24 @@
     "theme": "מצב תצוגה",
     "dark": "כהה",
     "light": "בהיר"
+  },
+  "household": {
+    "title": "משק בית",
+    "add": "הוסף בן משפחה",
+    "edit": "ערוך בן משפחה",
+    "manage": "נהל",
+    "allMembers": "כל המשפחה",
+    "archive": "ארכיון",
+    "noArchive": "אין בני משפחה בארכיון",
+    "restore": "שחזר",
+    "deleteConfirm": "הסר את {name}? נתונים היסטוריים יישמרו"
+  },
+  "relationship": {
+    "self": "אני",
+    "spouse": "בן/בת זוג",
+    "child": "ילד/ה",
+    "parent": "הורה",
+    "sibling": "אח/ות",
+    "other": "אחר"
   }
 }

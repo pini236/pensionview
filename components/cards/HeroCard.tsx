@@ -5,13 +5,23 @@ import { useTranslations, useLocale } from "next-intl";
 import { Badge } from "@/components/ui/Badge";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { formatCurrency } from "@/lib/format";
+import { AVATAR_COLOR_HEX } from "@/lib/avatar";
+import type { AvatarColor } from "@/lib/types";
 
 interface HeroCardProps {
   totalSavings: number;
   previousTotalSavings: number | null;
+  /** When set, renders an accent stripe + eyebrow line for the active member. */
+  memberName?: string | null;
+  memberColor?: AvatarColor | null;
 }
 
-export function HeroCard({ totalSavings, previousTotalSavings }: HeroCardProps) {
+export function HeroCard({
+  totalSavings,
+  previousTotalSavings,
+  memberName,
+  memberColor,
+}: HeroCardProps) {
   const t = useTranslations("dashboard");
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
@@ -26,8 +36,23 @@ export function HeroCard({ totalSavings, previousTotalSavings }: HeroCardProps) 
     ? "shadow-[0_0_40px_-15px_rgba(34,197,94,0.35)]"
     : "shadow-[0_0_40px_-15px_rgba(245,158,11,0.35)]";
 
+  const accent = memberColor ? AVATAR_COLOR_HEX[memberColor] : null;
+  const eyebrow =
+    memberName ? `${memberName} · ${t("totalBalance")}` : null;
+
   return (
     <div className={`relative overflow-hidden rounded-xl bg-surface p-6 ${glow}`}>
+      {/* Per-member accent stripe on the leading edge */}
+      {accent && (
+        <div
+          className="absolute inset-y-0 start-0 w-[6px]"
+          style={{
+            backgroundColor: accent,
+            boxShadow: `0 0 24px -2px ${accent}`,
+          }}
+          aria-hidden="true"
+        />
+      )}
       {/* One-shot shine sweep on mount */}
       <motion.div
         className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
@@ -36,6 +61,11 @@ export function HeroCard({ totalSavings, previousTotalSavings }: HeroCardProps) 
         transition={{ duration: 1.6, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
       />
       <div className="relative">
+        {eyebrow && (
+          <p className="mb-1 text-xs uppercase tracking-wide text-text-muted">
+            {eyebrow}
+          </p>
+        )}
         <p className="text-sm text-text-muted">{t("totalSavings")}</p>
         <p className="mt-1 text-[32px] font-medium leading-tight">
           <span className="bg-gradient-to-br from-text-primary via-text-primary to-text-muted bg-clip-text text-transparent">

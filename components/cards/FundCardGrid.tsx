@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { FundCard } from "./FundCard";
-import type { ProductType } from "@/lib/types";
+import type { Member, ProductType } from "@/lib/types";
 
 interface Fund {
   id: string;
@@ -11,6 +11,7 @@ interface Fund {
   product_type: ProductType;
   balance: number | null;
   monthly_return_pct: number | null;
+  member?: Pick<Member, "name" | "avatar_color"> | null;
 }
 
 const containerVariants = {
@@ -39,6 +40,7 @@ export function FundCardGrid({ funds }: { funds: Fund[] }) {
             productType={fund.product_type}
             balance={fund.balance || 0}
             monthlyReturnPct={fund.monthly_return_pct}
+            member={fund.member}
           />
         </motion.div>
       ))}

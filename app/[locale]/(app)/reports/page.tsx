@@ -1,64 +1,126 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { MemberAvatar } from "@/components/members/MemberAvatar";
+import { getActiveMember } from "@/lib/active-member";
 import { formatCurrency } from "@/lib/format";
+import type { Member } from "@/lib/types";
 
-export default async function ReportsPage() {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ member?: string }>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const active = await getActiveMember(sp);
+  const suffix =
+    active.kind === "single" ? active.member.name : "Household";
+  return { title: `PensionView · ${suffix}` };
+}
+
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ member?: string }>;
+}) {
   const supabase = await createServerSupabase();
   const locale = await getLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
+  const sp = await searchParams;
+  const active = await getActiveMember(sp);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles")
-    .select("id")
-    .eq("email", user!.email!)
-    .single();
+  if (active.householdMemberIds.length === 0) {
+    return <div className="text-text-muted">Profile not found</div>;
+  }
 
-  if (!profile) return <div className="text-text-muted">Profile not found</div>;
-
-  const { data: reports } = await supabase.from("reports")
-    .select("id, report_date, report_summary(total_savings)")
-    .eq("profile_id", profile.id)
+  // Fetch all reports across the active member ids in one query
+  const { data: reports } = await supabase
+    .from("reports")
+    .select("id, profile_id, report_date, report_summary(total_savings)")
+    .in("profile_id", active.householdMemberIds)
     .eq("status", "done")
     .order("report_date", { ascending: false });
 
   // Group by year
-  const grouped = (reports || []).reduce((acc, report) => {
-    const year = new Date(report.report_date).getFullYear();
-    if (!acc[year]) acc[year] = [];
-    acc[year].push(report);
-    return acc;
-  }, {} as Record<number, typeof reports>);
+  const grouped = (reports || []).reduce(
+    (acc, report) => {
+      const year = new Date(report.report_date).getFullYear();
+      if (!acc[year]) acc[year] = [];
+      acc[year].push(report);
+      return acc;
+    },
+    {} as Record<number, NonNullable<typeof reports>>
+  );
 
   const years = Object.keys(grouped).map(Number).sort((a, b) => b - a);
 
+  // Member lookup for the avatar cluster
+  const membersById = new Map<string, Member>(
+    active.members.map((m) => [m.id, m])
+  );
+  const isCombined = active.kind === "all";
+
   return (
     <div className="space-y-6">
+      {active.kind === "single" && (
+        <p className="text-xs uppercase tracking-wide text-text-muted">
+          {active.member.name} ·{" "}
+          {locale === "he" ? "דוחות" : "Reports"}
+        </p>
+      )}
+      {isCombined && (
+        <p className="text-xs uppercase tracking-wide text-text-muted">
+          {locale === "he" ? "כל המשפחה · דוחות" : "All household · Reports"}
+        </p>
+      )}
+
       {years.length === 0 && (
-        <p className="text-text-muted">אין דוחות עדיין</p>
+        <p className="text-text-muted">
+          {locale === "he" ? "אין דוחות עדיין" : "No reports yet"}
+        </p>
       )}
       {years.map((year) => (
         <section key={year}>
           <h2 className="mb-3 text-sm font-medium text-text-muted">{year}</h2>
           <div className="space-y-2">
             {grouped[year]!.map((report) => {
-              const summaryRaw = report.report_summary as { total_savings: number | null } | { total_savings: number | null }[] | null;
-              const summary = Array.isArray(summaryRaw) ? summaryRaw[0] : summaryRaw;
+              const summaryRaw = report.report_summary as
+                | { total_savings: number | null }
+                | { total_savings: number | null }[]
+                | null;
+              const summary = Array.isArray(summaryRaw)
+                ? summaryRaw[0]
+                : summaryRaw;
               const total = summary?.total_savings ?? 0;
+              const reportMember = membersById.get(report.profile_id) ?? null;
               return (
                 <Link
                   key={report.id}
                   href={`/${locale}/reports/${report.id}`}
-                  className="flex items-center justify-between rounded-lg bg-surface p-4 transition-colors hover:bg-surface-hover cursor-pointer"
+                  className="flex items-center justify-between gap-3 rounded-lg bg-surface p-4 transition-colors hover:bg-surface-hover cursor-pointer"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-text-primary">
-                      {new Date(report.report_date).toLocaleDateString(fullLocale, { month: "long", year: "numeric" })}
+                      {new Date(report.report_date).toLocaleDateString(
+                        fullLocale,
+                        { month: "long", year: "numeric" }
+                      )}
                     </p>
+                    {isCombined && reportMember && (
+                      <p className="mt-0.5 text-xs text-text-muted">
+                        {reportMember.name}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm font-medium text-text-primary">
-                    <bdi>{formatCurrency(total, fullLocale)}</bdi>
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-text-primary">
+                      <bdi>{formatCurrency(total, fullLocale)}</bdi>
+                    </p>
+                    {isCombined && reportMember && (
+                      <MemberAvatar member={reportMember} size="sm" />
+                    )}
+                  </div>
                 </Link>
               );
             })}

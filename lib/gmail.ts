@@ -97,10 +97,16 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const resolved = await fetch(surenseLink, { redirect: "manual" });
     const apiUrl = resolved.headers.get("location") || surenseLink;
 
-    // Match recipient to a profile
+    // Match recipient to a profile.
+    // Filter `deleted_at is null` so archived family members don't soak up
+    // incoming reports.
+    // TODO: when supporting multiple households, also filter by household_id
+    // (today the auth user's household is the only one — `profile` above is
+    // already that household's self anchor).
     const { data: matchedProfile } = await admin.from("profiles")
       .select("id")
       .ilike("name", `%${recipientName}%`)
+      .is("deleted_at", null)
       .single();
 
     if (matchedProfile) {

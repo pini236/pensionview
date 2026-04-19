@@ -40,6 +40,46 @@ export const FUND_COLORS: Record<ProductType, string> = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Family Mode (v1) — household membership
+// ---------------------------------------------------------------------------
+
+export type Relationship =
+  | "self"
+  | "spouse"
+  | "child"
+  | "parent"
+  | "sibling"
+  | "other";
+
+export type AvatarColor = "blue" | "purple" | "amber" | "green" | "cyan";
+
+/**
+ * Allowed values for the `profiles.relationship` column. Mirrors the SQL
+ * check constraint in migration 003 — keep in sync if you ever add one.
+ */
+export const RELATIONSHIP_VALUES: readonly Relationship[] = [
+  "self",
+  "spouse",
+  "child",
+  "parent",
+  "sibling",
+  "other",
+] as const;
+
+/**
+ * Allowed values for the `profiles.avatar_color` column. Mirrors the SQL
+ * check constraint in migration 003. The hex map / nextAvatarColor helper
+ * lives in `lib/avatar.ts`.
+ */
+export const AVATAR_COLOR_VALUES: readonly AvatarColor[] = [
+  "blue",
+  "purple",
+  "amber",
+  "green",
+  "cyan",
+] as const;
+
+// ---------------------------------------------------------------------------
 // Table interfaces
 // ---------------------------------------------------------------------------
 
@@ -54,6 +94,27 @@ export interface Profile {
   google_token_expiry: string | null;
   date_of_birth: string | null;
   created_at: string;
+  // Family Mode columns (added by 2026_04_20_family_mode migration)
+  household_id: string | null;
+  relationship: Relationship | null;
+  avatar_color: AvatarColor | null;
+  is_self: boolean;
+  deleted_at: string | null;
+}
+
+/**
+ * UI-friendly subset of Profile used by Family Mode components. Backend / API
+ * routes return this shape over the wire; client never needs the heavy auth /
+ * Google fields when rendering pills or switchers.
+ */
+export interface Member {
+  id: string;
+  name: string;
+  relationship: Relationship;
+  avatar_color: AvatarColor;
+  is_self: boolean;
+  date_of_birth?: string | null;
+  national_id?: string | null;
 }
 
 export interface Report {

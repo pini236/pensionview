@@ -14,6 +14,26 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
+    // Reject uploads targeted at archived profiles. The backfill picker is
+    // already filtered to non-deleted members on the page, so this is a
+    // server-side safety net for stale form posts.
+    // TODO: when supporting multiple households, also assert the profile
+    // belongs to the operator's household.
+    const { data: profileCheck } = await admin.from("profiles")
+      .select("id, deleted_at")
+      .eq("id", profileId)
+      .maybeSingle();
+
+    if (!profileCheck) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+    if (profileCheck.deleted_at) {
+      return NextResponse.json(
+        { error: "Profile is archived; restore before uploading reports" },
+        { status: 410 }
+      );
+    }
+
     // Extract date from filename (e.g., "דוח תקופתי 02-2026.pdf" → 2026-02-28)
     const dateMatch = file.name.match(/(\d{2})-(\d{4})/);
     let reportDate: string;
