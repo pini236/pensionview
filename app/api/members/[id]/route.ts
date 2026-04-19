@@ -230,10 +230,8 @@ export async function PATCH(
   if (valid.value.avatar_color !== undefined) update.avatar_color = valid.value.avatar_color;
   if (valid.value.date_of_birth !== undefined) update.date_of_birth = valid.value.date_of_birth;
   if ("national_id" in valid.value) {
-    update.national_id =
-      valid.value.national_id === null
-        ? null
-        : encrypt(valid.value.national_id, encryptionKey);
+    const nid = valid.value.national_id;
+    update.national_id = nid == null ? null : encrypt(nid, encryptionKey);
   }
 
   const admin = createAdminClient();
