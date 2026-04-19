@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --color-background: #020617;
+  --color-surface: #1E293B;
+  --color-surface-hover: #334155;
+  --color-text-primary: #F8FAFC;
+  --color-text-muted: #94A3B8;
+  --color-gain: #22C55E;
+  --color-loss: #F59E0B;
+  --color-cta: #22C55E;
+  --color-fund-pension: #3B82F6;
+  --color-fund-education: #A78BFA;
+  --color-fund-severance: #F59E0B;
+  --color-fund-investment: #22C55E;
+  --color-fund-savings: #06B6D4;
+}
+
+.light {
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F1F5F9;
+  --color-text-primary: #0F172A;
+  --color-text-muted: #64748B;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
