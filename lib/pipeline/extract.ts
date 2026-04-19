@@ -31,8 +31,8 @@ If a page has no extractable financial data (e.g., cover page, letter), return {
 Return ONLY valid JSON, no markdown fences, no commentary.`;
 
 export async function extractPage(
-  imageBase64: string,
-  mediaType: "image/png" | "image/jpeg" = "image/png"
+  pdfBase64: string,
+  pageNumber: number
 ): Promise<Record<string, unknown>> {
   const startTime = Date.now();
 
@@ -43,21 +43,27 @@ export async function extractPage(
       {
         role: "user",
         content: [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           {
-            type: "image",
+            type: "document",
             source: {
               type: "base64",
-              media_type: mediaType,
-              data: imageBase64,
+              media_type: "application/pdf",
+              data: pdfBase64,
             },
+            cache_control: { type: "ephemeral" },
+          } as any,
+          {
+            type: "text",
+            text: `Extract data ONLY from page ${pageNumber} of this PDF.\n\n${EXTRACTION_PROMPT}`,
           },
-          { type: "text", text: EXTRACTION_PROMPT },
         ],
       },
     ],
   });
 
   const latencyMs = Date.now() - startTime;
+  const usageAny = response.usage as unknown as Record<string, number>;
 
   console.log(
     JSON.stringify({
@@ -65,14 +71,11 @@ export async function extractPage(
       model: response.model,
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
-      cache_read_input_tokens:
-        (response.usage as Record<string, unknown>).cache_read_input_tokens ??
-        0,
-      cache_creation_input_tokens:
-        (response.usage as Record<string, unknown>)
-          .cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: usageAny.cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: usageAny.cache_creation_input_tokens ?? 0,
       latency_ms: latencyMs,
       stop_reason: response.stop_reason,
+      page: pageNumber,
       feature: "pdf-page-extraction",
     })
   );

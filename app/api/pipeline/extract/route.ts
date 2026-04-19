@@ -26,13 +26,12 @@ export async function POST(request: NextRequest) {
 
     if (!pdfData) throw new Error("Could not download PDF");
 
-    // Note: PDF page-to-image conversion library integration pending.
-    // For now, send the entire PDF buffer as a single image — Claude Vision can handle PDFs directly when sent as base64.
-    // This will need refinement to convert each page to a separate image (using pdf-to-img, pdfjs-dist, or similar).
     const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
     const base64 = pdfBuffer.toString("base64");
 
-    const pageData = await extractPage(base64, "image/png");
+    // Use Claude's native PDF support — send the full PDF base64 with the target page number.
+    // Cache control on the document block means subsequent page calls reuse the cached PDF tokens.
+    const pageData = await extractPage(base64, page);
 
     const storagePath = `reports/${report.profile_id}/extractions/${reportId}/page_${page}.json`;
     await admin.storage.from("reports").upload(

@@ -78,14 +78,15 @@ Return ONLY the Hebrew text, no JSON, no markdown.`;
 
   const latencyMs = Date.now() - startTime;
 
+  const usageAny = response.usage as unknown as Record<string, number>;
   console.info(JSON.stringify({
     event: "llm_call",
     feature: "insight_generation",
     model: response.model,
     input_tokens: response.usage.input_tokens,
     output_tokens: response.usage.output_tokens,
-    cache_read_input_tokens: (response.usage as Record<string, unknown>).cache_read_input_tokens ?? 0,
-    cache_creation_input_tokens: (response.usage as Record<string, unknown>).cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: usageAny.cache_read_input_tokens ?? 0,
+    cache_creation_input_tokens: usageAny.cache_creation_input_tokens ?? 0,
     latency_ms: latencyMs,
     stop_reason: response.stop_reason,
     report_id: reportId,
