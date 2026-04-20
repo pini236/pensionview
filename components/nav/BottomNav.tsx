@@ -23,7 +23,7 @@ export function BottomNav() {
       initial={{ y: 60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1], delay: 0.1 }}
-      className="fixed bottom-0 start-0 end-0 z-50 border-t border-surface bg-background/95 backdrop-blur-sm lg:hidden"
+      className="fixed bottom-0 start-0 end-0 z-50 border-t border-surface bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden"
     >
       <div className="mx-auto flex max-w-lg items-center justify-around py-2">
         {tabs.map(({ key, href, icon: Icon }) => {

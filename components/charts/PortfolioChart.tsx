@@ -67,7 +67,7 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
               <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString(fullLocale, { month: "short" })} />
-              <YAxis orientation={yAxisOrientation} stroke="#94A3B8" fontSize={11} tickFormatter={(v) => compactCurrency(v)} width={80} />
+              <YAxis orientation={yAxisOrientation} stroke="#94A3B8" fontSize={11} tickFormatter={(v) => compactCurrency(v)} width={56} />
               <Tooltip
                 contentStyle={{ backgroundColor: "#1E293B", border: "none", borderRadius: 8 }}
                 labelStyle={{ color: "#F8FAFC" }}

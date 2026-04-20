@@ -29,7 +29,7 @@ export default async function AppLayout({
   const members = active.members;
 
   return (
-    <div className="min-h-screen pb-20 pt-14 lg:pb-0 lg:pt-0">
+    <div className="min-h-screen pb-24 pt-14 lg:pb-0 lg:pt-0">
       <AnimatedBackground />
       <FloatingParticles />
       <TopBar members={members} />

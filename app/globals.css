@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --breakpoint-xs: 22.5rem;
   --font-sans: 'IBM Plex Sans', sans-serif;
   --color-background: #020617;
   --color-surface: #1E293B;
