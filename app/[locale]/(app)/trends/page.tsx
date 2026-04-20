@@ -479,14 +479,7 @@ async function CombinedTrends({
       {fundChanges.length > 0 && (
         <div className="space-y-2">
           {fundChanges.map(({ member, fund }, i) => (
-            <div key={fund.id} className="relative">
-              {/* Member chip overlay near the leading-edge color stripe so it
-                  doesn't collide with the trophy/loss badge on the trailing edge. */}
-              <div className="pointer-events-none absolute start-3 top-3 z-10">
-                <MemberAvatar member={member} size="sm" />
-              </div>
-              <FundChangeCard fund={fund} index={i} />
-            </div>
+            <FundChangeCard key={fund.id} fund={fund} index={i} member={member} />
           ))}
         </div>
       )}

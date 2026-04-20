@@ -4,8 +4,9 @@ import { motion } from "motion/react";
 import { useLocale } from "next-intl";
 import { TrendingDown, TrendingUp, Trophy } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import type { ProductType } from "@/lib/types";
+import type { ProductType, Member } from "@/lib/types";
 import { FUND_COLORS } from "@/lib/types";
+import { MemberAvatar } from "@/components/members/MemberAvatar";
 
 export interface FundChange {
   id: string;
@@ -22,6 +23,7 @@ interface FundChangeCardProps {
   index: number;
   isBest?: boolean;
   isWorst?: boolean;
+  member?: Member | null;
 }
 
 export function FundChangeCard({
@@ -29,6 +31,7 @@ export function FundChangeCard({
   index,
   isBest = false,
   isWorst = false,
+  member = null,
 }: FundChangeCardProps) {
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
@@ -87,11 +90,18 @@ export function FundChangeCard({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden p-4">
-        <div className="min-w-0 pe-8">
-          <p className="truncate text-xs text-text-muted">{fund.provider ?? ""}</p>
-          <p className="truncate text-sm font-medium text-text-primary">
-            {fund.productName ?? ""}
-          </p>
+        <div className={`flex min-w-0 items-start gap-2 ${isBest || isWorst ? "pe-8" : ""}`}>
+          {member && (
+            <div className="flex-shrink-0 mt-0.5">
+              <MemberAvatar member={member} size="sm" />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-text-muted">{fund.provider ?? ""}</p>
+            <p className="truncate text-sm font-medium text-text-primary">
+              {fund.productName ?? ""}
+            </p>
+          </div>
         </div>
 
         <div className="min-w-0">
