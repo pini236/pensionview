@@ -454,6 +454,69 @@ async function CombinedDashboard({
     0
   );
 
+  // Deposit verification across the whole household. Take the last 4 done
+  // reports per member so each member's fund history is detected
+  // independently, then concat all alerts.
+  const depositHistoryByProfile = new Map<
+    string,
+    Array<{ id: string; report_date: string }>
+  >();
+  for (const r of doneReports ?? []) {
+    const list = depositHistoryByProfile.get(r.profile_id) ?? [];
+    if (list.length < 4) {
+      list.push({ id: r.id, report_date: r.report_date });
+      depositHistoryByProfile.set(r.profile_id, list);
+    }
+  }
+  const depositHistoryReportIds = Array.from(depositHistoryByProfile.values())
+    .flat()
+    .map((r) => r.id);
+  const depositReportMeta = new Map<
+    string,
+    { profileId: string; date: string }
+  >();
+  for (const [profileId, list] of depositHistoryByProfile.entries()) {
+    for (const r of list) {
+      depositReportMeta.set(r.id, { profileId, date: r.report_date });
+    }
+  }
+
+  const depositAlerts: ReturnType<typeof detectDepositAlerts> = [];
+  if (depositHistoryReportIds.length >= 2) {
+    const { data: depositHistorySavings } = await supabase
+      .from("savings_products")
+      .select("report_id, fund_number, product_name, provider, monthly_deposit")
+      .in("report_id", depositHistoryReportIds);
+
+    const perMemberRows = new Map<
+      string,
+      Array<{
+        fund_number: string | null;
+        product_name: string | null;
+        provider: string | null;
+        monthly_deposit: number;
+        report_date: string;
+      }>
+    >();
+    for (const s of depositHistorySavings ?? []) {
+      const meta = depositReportMeta.get(s.report_id);
+      if (!meta) continue;
+      const list = perMemberRows.get(meta.profileId) ?? [];
+      list.push({
+        fund_number: s.fund_number,
+        product_name: s.product_name,
+        provider: s.provider,
+        monthly_deposit: s.monthly_deposit,
+        report_date: meta.date,
+      });
+      perMemberRows.set(meta.profileId, list);
+    }
+
+    for (const rows of perMemberRows.values()) {
+      depositAlerts.push(...detectDepositAlerts(groupFundHistories(rows)));
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
       <div className="lg:col-span-8 xl:col-span-7">
@@ -473,6 +536,10 @@ async function CombinedDashboard({
           />
         </div>
       )}
+
+      <div className="lg:col-span-12">
+        <DepositAlertsCard alerts={depositAlerts} />
+      </div>
 
       <div className="lg:col-span-12">
         <FeeAnalysisCard
