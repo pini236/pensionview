@@ -5,6 +5,7 @@ import { TopBar } from "@/components/nav/TopBar";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { AnimatedBackground } from "@/components/background/AnimatedBackground";
 import { FloatingParticles } from "@/components/background/FloatingParticles";
+import { AdvisorChat } from "@/components/advisor/AdvisorChat";
 import { getActiveMember } from "@/lib/active-member";
 
 export default async function AppLayout({
@@ -37,6 +38,7 @@ export default async function AppLayout({
         {children}
       </main>
       <BottomNav />
+      <AdvisorChat />
     </div>
   );
 }
