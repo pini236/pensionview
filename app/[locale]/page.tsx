@@ -7,13 +7,17 @@ export default async function LocaleRoot({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect(`/${locale}/dashboard`);
+  // Defensively check auth — if Supabase is slow or errors out, default to login
+  // rather than 500ing the page. The login page itself is robust on cold starts.
+  let isAuthed = false;
+  try {
+    const supabase = await createServerSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthed = !!user;
+  } catch {
+    isAuthed = false;
   }
-  redirect(`/${locale}/login`);
+
+  redirect(`/${locale}/${isAuthed ? "dashboard" : "login"}`);
 }
