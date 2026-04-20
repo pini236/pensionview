@@ -79,11 +79,11 @@ export function RetirementGoalCard({
     >
       <div className="mb-3 flex items-start gap-2">
         <Target className="mt-0.5 h-5 w-5 flex-shrink-0 text-cta" />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <p className="text-xs uppercase tracking-wide text-text-muted">
             {isHebrew ? "יעד הפרישה שלך" : "Your retirement goal"}
           </p>
-          <p className="text-2xl font-semibold text-text-primary tabular-nums">
+          <p className="text-xl sm:text-2xl font-semibold text-text-primary tabular-nums truncate">
             <bdi>{formatCurrency(goalMonthly, fullLocale)}</bdi>
             <span className="text-sm text-text-muted ms-1">
               {isHebrew ? "/חודש" : "/mo"}
@@ -122,14 +122,14 @@ export function RetirementGoalCard({
           <p className="text-xs text-text-muted">
             {isHebrew ? "פער עד היעד" : "Gap to goal"}
           </p>
-          <p className="text-lg font-semibold text-loss tabular-nums">
+          <p className="text-lg font-semibold text-loss tabular-nums truncate">
             <bdi>{formatCurrency(gap, fullLocale)}</bdi>
             <span className="text-xs text-text-muted ms-1">
               {isHebrew ? "/חודש" : "/mo"}
             </span>
           </p>
           {suggestedExtra > 0 && yearsLeft && (
-            <p className="mt-2 text-xs text-text-primary">
+            <p className="mt-2 text-xs text-text-primary break-words">
               <Sparkles className="inline h-3 w-3 text-cta" />{" "}
               {isHebrew
                 ? `הוסף כ-${formatCurrency(Math.round(suggestedExtra), fullLocale)} להפקדה החודשית כדי לסגור את הפער ב-${yearsLeft} שנים`
@@ -144,7 +144,7 @@ export function RetirementGoalCard({
           <p className="text-sm font-medium text-gain">
             {isHebrew ? "אתה בדרך הנכונה!" : "You're on track!"}
           </p>
-          <p className="mt-1 text-xs text-text-muted">
+          <p className="mt-1 text-xs text-text-muted break-words">
             {isHebrew
               ? `תחזית של ${formatCurrency(projectedFull, fullLocale)} עומדת ביעד שלך`
               : `Projected ${formatCurrency(projectedFull, fullLocale)} meets your goal`}

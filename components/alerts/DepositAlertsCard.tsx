@@ -53,10 +53,10 @@ export function DepositAlertsCard({ alerts }: { alerts: DepositAlert[] }) {
           >
             <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-loss" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-text-primary">
+              <p className="text-sm font-medium text-text-primary break-words">
                 {isHebrew ? alert.message : alert.messageEn}
               </p>
-              <p className="text-xs text-text-muted">{alert.provider}</p>
+              <p className="truncate text-xs text-text-muted">{alert.provider}</p>
             </div>
           </motion.div>
         );

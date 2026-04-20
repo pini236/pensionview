@@ -62,9 +62,9 @@ export function Sidebar({ members }: SidebarProps) {
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
-                <span className="relative z-10 flex items-center gap-3">
-                  <Icon size={18} />
-                  <span>{t(key)}</span>
+                <span className="relative z-10 flex items-center gap-3 min-w-0">
+                  <Icon size={18} className="flex-shrink-0" />
+                  <span className="truncate">{t(key)}</span>
                 </span>
               </Link>
             </motion.div>

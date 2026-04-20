@@ -41,7 +41,7 @@ export function HeroCard({
     memberName ? `${memberName} · ${t("totalBalance")}` : null;
 
   return (
-    <div className={`relative overflow-hidden rounded-xl bg-surface p-6 ${glow}`}>
+    <div className={`relative overflow-hidden rounded-xl bg-surface p-5 sm:p-6 ${glow}`}>
       {/* Per-member accent stripe on the leading edge */}
       {accent && (
         <div
@@ -60,14 +60,14 @@ export function HeroCard({
         animate={{ x: "200%" }}
         transition={{ duration: 1.6, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
       />
-      <div className="relative">
+      <div className="relative min-w-0">
         {eyebrow && (
-          <p className="mb-1 text-xs uppercase tracking-wide text-text-muted">
+          <p className="mb-1 truncate text-xs uppercase tracking-wide text-text-muted">
             {eyebrow}
           </p>
         )}
         <p className="text-sm text-text-muted">{t("totalSavings")}</p>
-        <p className="mt-1 text-[32px] font-medium leading-tight">
+        <p className="mt-1 text-2xl sm:text-[28px] md:text-[32px] font-medium leading-tight tabular-nums truncate">
           <span className="bg-gradient-to-br from-text-primary via-text-primary to-text-muted bg-clip-text text-transparent">
             <bdi>
               <AnimatedNumber

@@ -89,18 +89,18 @@ export function MemberSwitcher({ members, variant = "compact" }: MemberSwitcherP
             <MemberAvatar member={activeMember} size="sm" />
           ) : (
             <span
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-background text-text-muted"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-background text-text-muted flex-shrink-0"
               aria-hidden="true"
             >
               <Users size={14} />
             </span>
           )}
-          <span className="truncate">{triggerLabel}</span>
+          <span className={clsx("truncate", !isFull && "max-w-[140px]")}>{triggerLabel}</span>
         </span>
         <ChevronDown
           size={14}
           className={clsx(
-            "text-text-muted transition-transform",
+            "flex-shrink-0 text-text-muted transition-transform",
             open && "rotate-180"
           )}
         />

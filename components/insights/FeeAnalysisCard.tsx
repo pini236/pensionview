@@ -43,14 +43,14 @@ export function FeeAnalysisCard({ analyses }: { analyses: FeeAnalysis[] }) {
     >
       <div className="mb-4 flex items-start gap-3">
         <TrendingDown className="mt-0.5 h-5 w-5 flex-shrink-0 text-loss" />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <p className="text-sm text-text-muted">
             {isHebrew ? "פוטנציאל חיסכון שנתי בדמי ניהול" : "Annual fee savings potential"}
           </p>
-          <p className="mt-1 text-3xl font-semibold text-loss tabular-nums">
+          <p className="mt-1 text-2xl sm:text-3xl font-semibold text-loss tabular-nums truncate">
             <bdi>{formatCurrency(totals.vsMarket, fullLocale)}</bdi>
           </p>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-text-muted break-words">
             {isHebrew
               ? `אם תעבור לקרנות בדמי ניהול ממוצעי שוק (${formatCurrency(totals.vsBest, fullLocale)} למובילות בשוק)`
               : `If you switched to market-average fees (${formatCurrency(totals.vsBest, fullLocale)} for best-in-market)`}
@@ -64,16 +64,16 @@ export function FeeAnalysisCard({ analyses }: { analyses: FeeAnalysis[] }) {
             {isHebrew ? "קרנות עם דמי ניהול גבוהים" : "High-fee funds"}
           </p>
           {high.slice(0, 3).map((a) => (
-            <div key={a.fundId} className="flex items-center justify-between text-sm">
+            <div key={a.fundId} className="flex items-center justify-between gap-3 text-sm">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-text-primary">{a.fundName}</p>
-                <p className="text-xs text-text-muted">
+                <p className="truncate text-xs text-text-muted">
                   {isHebrew
                     ? `${formatPercent(a.balanceFeePct, fullLocale)} (ממוצע: ${formatPercent(a.marketAvgBalance, fullLocale)})`
                     : `${formatPercent(a.balanceFeePct, fullLocale)} (avg: ${formatPercent(a.marketAvgBalance, fullLocale)})`}
                 </p>
               </div>
-              <p className="text-loss tabular-nums">
+              <p className="flex-shrink-0 text-loss tabular-nums whitespace-nowrap">
                 <bdi>+{formatCurrency(a.savingsVsMarket, fullLocale)}/yr</bdi>
               </p>
             </div>

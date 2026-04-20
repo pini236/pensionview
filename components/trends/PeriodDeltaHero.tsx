@@ -83,9 +83,9 @@ export function PeriodDeltaHero({
         transition={{ duration: 1.6, delay: 0.4, ease: [0.32, 0.72, 0, 1] }}
       />
       <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-center">
-        <div>
-          <p className="text-sm text-text-muted">{eyebrow}</p>
-          <p className="mt-2 text-5xl font-semibold leading-tight tabular-nums lg:text-6xl">
+        <div className="min-w-0">
+          <p className="text-sm text-text-muted truncate">{eyebrow}</p>
+          <p className="mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight tabular-nums truncate">
             <span
               className={clsx(
                 "bg-gradient-to-br bg-clip-text text-transparent",
@@ -100,7 +100,7 @@ export function PeriodDeltaHero({
               </bdi>
             </span>
           </p>
-          <p className="mt-3 text-sm text-text-muted">
+          <p className="mt-3 text-sm text-text-muted break-words">
             <bdi>{subline}</bdi>
           </p>
         </div>

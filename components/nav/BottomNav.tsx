@@ -45,7 +45,7 @@ export function BottomNav() {
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
-              <span className="relative z-10 flex flex-col items-center gap-1">
+              <span className="relative z-10 flex w-full flex-col items-center gap-1 px-1 min-w-0">
                 <motion.span
                   whileTap={{ scale: 0.85 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -53,7 +53,7 @@ export function BottomNav() {
                 >
                   <Icon size={22} />
                 </motion.span>
-                <span className="text-xs">{t(key)}</span>
+                <span className="max-w-full truncate text-xs">{t(key)}</span>
               </span>
             </Link>
           );

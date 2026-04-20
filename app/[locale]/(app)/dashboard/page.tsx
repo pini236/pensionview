@@ -220,7 +220,7 @@ async function SingleMemberDashboard({
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
       {summary && (
-        <div className="lg:col-span-8 xl:col-span-7">
+        <div className="min-w-0 lg:col-span-8 xl:col-span-7">
           <HeroCard
             totalSavings={summary.total_savings || 0}
             previousTotalSavings={previousSummary?.total_savings || null}
@@ -231,22 +231,22 @@ async function SingleMemberDashboard({
       )}
 
       {insight && (
-        <div className="lg:col-span-4 xl:col-span-5">
+        <div className="min-w-0 lg:col-span-4 xl:col-span-5">
           <InsightCard text={insight.summary_text} label="תובנה חודשית" />
         </div>
       )}
 
-      <div className="lg:col-span-12">
+      <div className="min-w-0 lg:col-span-12">
         <DepositAlertsCard alerts={depositAlerts} />
       </div>
 
-      <div className="lg:col-span-12">
+      <div className="min-w-0 lg:col-span-12">
         <FeeAnalysisCard
           analyses={analyzeFees((savings ?? []) as SavingsProduct[])}
         />
       </div>
 
-      <div className="lg:col-span-8 xl:col-span-8">
+      <div className="min-w-0 lg:col-span-8 xl:col-span-8">
         <FundCardGrid
           funds={(savings || []).map((fund) => ({
             id: fund.id,
@@ -260,7 +260,7 @@ async function SingleMemberDashboard({
         />
       </div>
 
-      <aside className="lg:col-span-4 xl:col-span-4 space-y-4">
+      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4">
         <RetirementGoalCard
           projectedFull={summary?.projected_pension_full ?? 0}
           goalMonthly={profile.retirement_goal_monthly ?? null}
@@ -544,7 +544,7 @@ async function CombinedDashboard({
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-      <div className="lg:col-span-8 xl:col-span-7">
+      <div className="min-w-0 lg:col-span-8 xl:col-span-7">
         <HouseholdHero
           total={grandTotal}
           segments={segments}
@@ -554,7 +554,7 @@ async function CombinedDashboard({
       </div>
 
       {insight?.summary_text && (
-        <div className="lg:col-span-4 xl:col-span-5">
+        <div className="min-w-0 lg:col-span-4 xl:col-span-5">
           <InsightCard
             text={insight.summary_text}
             label={selfMember ? `${selfMember.name} · תובנה חודשית` : "תובנה חודשית"}
@@ -562,21 +562,21 @@ async function CombinedDashboard({
         </div>
       )}
 
-      <div className="lg:col-span-12">
+      <div className="min-w-0 lg:col-span-12">
         <DepositAlertsCard alerts={depositAlerts} />
       </div>
 
-      <div className="lg:col-span-12">
+      <div className="min-w-0 lg:col-span-12">
         <FeeAnalysisCard
           analyses={analyzeFees((savings ?? []) as SavingsProduct[])}
         />
       </div>
 
-      <div className="lg:col-span-8 xl:col-span-8">
+      <div className="min-w-0 lg:col-span-8 xl:col-span-8">
         <FundCardGrid funds={fundsWithMember} />
       </div>
 
-      <aside className="lg:col-span-4 xl:col-span-4 space-y-4">
+      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4">
         <RetirementGoalCard
           projectedFull={totalProjectedFull}
           goalMonthly={headProfile?.retirement_goal_monthly ?? null}

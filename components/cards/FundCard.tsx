@@ -64,24 +64,26 @@ export function FundCard({ provider, productName, productType, balance, monthlyR
           boxShadow: `0 0 20px -2px ${color}`,
         }}
       />
-      <div className="flex flex-1 items-center justify-between gap-3 p-4">
+      <div className="flex flex-1 items-center justify-between gap-3 overflow-hidden p-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {member && <MemberAvatar member={member} size="sm" />}
             <p className="truncate text-sm font-medium text-text-primary">{productName}</p>
           </div>
-          <p className="mt-0.5 text-xs text-text-muted">{provider}</p>
+          <p className="mt-0.5 truncate text-xs text-text-muted">{provider}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-shrink-0 items-center gap-3">
           {history && history.length >= 2 && (
-            <Sparkline values={history} color={color} width={60} height={20} />
+            <span className="hidden sm:inline-flex">
+              <Sparkline values={history} color={color} width={60} height={20} />
+            </span>
           )}
-          <div className="text-end">
-            <p className="text-sm font-medium text-text-primary">
+          <div className="text-end min-w-0">
+            <p className="text-sm font-medium text-text-primary tabular-nums truncate">
               <bdi>{formatCurrency(balance, fullLocale)}</bdi>
             </p>
             {monthlyReturnPct !== null && (
-              <p className={`text-xs ${monthlyReturnPct >= 0 ? "text-gain" : "text-loss"}`}>
+              <p className={`text-xs tabular-nums truncate ${monthlyReturnPct >= 0 ? "text-gain" : "text-loss"}`}>
                 <bdi>{monthlyReturnPct >= 0 ? "+" : ""}{formatPercent(monthlyReturnPct, fullLocale)}</bdi>
               </p>
             )}

@@ -160,7 +160,7 @@ export function InsuranceMatrix({ members, data }: InsuranceMatrixProps) {
       </div>
 
       {gaps.length > 0 && (
-        <p className="border-t border-surface-hover/40 pt-3 text-xs text-text-muted">
+        <p className="border-t border-surface-hover/40 pt-3 text-xs text-text-muted break-words">
           {isHe ? "פערים בכיסוי: " : "Coverage gaps: "}
           <span className="text-text-primary">{gaps.join(" · ")}</span>
         </p>

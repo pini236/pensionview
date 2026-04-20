@@ -27,11 +27,11 @@ export function InsightCard({ text, label }: InsightCardProps) {
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
       <div className="relative h-full rounded-xl bg-surface p-4">
-        <div className="mb-2 flex items-center gap-2 text-sm text-gain">
-          <Sparkles size={16} />
-          <span className="font-medium">{label}</span>
+        <div className="mb-2 flex items-center gap-2 text-sm text-gain min-w-0">
+          <Sparkles size={16} className="flex-shrink-0" />
+          <span className="font-medium truncate">{label}</span>
         </div>
-        <p className="text-sm leading-relaxed text-text-primary">{text}</p>
+        <p className="text-sm leading-relaxed text-text-primary break-words">{text}</p>
       </div>
     </div>
   );

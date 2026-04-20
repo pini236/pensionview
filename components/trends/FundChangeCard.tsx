@@ -86,20 +86,20 @@ export function FundChangeCard({
         </div>
       )}
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden p-4">
         <div className="min-w-0 pe-8">
-          <p className="text-xs text-text-muted">{fund.provider ?? ""}</p>
+          <p className="truncate text-xs text-text-muted">{fund.provider ?? ""}</p>
           <p className="truncate text-sm font-medium text-text-primary">
             {fund.productName ?? ""}
           </p>
         </div>
 
-        <div>
-          <p className="text-xl font-semibold tabular-nums text-text-primary">
+        <div className="min-w-0">
+          <p className="truncate text-lg sm:text-xl font-semibold tabular-nums text-text-primary">
             <bdi>{formatCurrency(fund.currentBalance, fullLocale)}</bdi>
           </p>
           {hasPrevious && (
-            <p className="text-xs text-text-muted">
+            <p className="truncate text-xs text-text-muted">
               <bdi>
                 {locale === "he" ? "היה: " : "Was: "}
                 <span className="opacity-70">
@@ -113,11 +113,11 @@ export function FundChangeCard({
         {hasPrevious && delta !== null && (
           <>
             <div
-              className={`flex items-center gap-2 text-sm font-medium ${
+              className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium ${
                 isGain ? "text-gain" : "text-loss"
               }`}
             >
-              {isGain ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+              {isGain ? <TrendingUp size={14} className="flex-shrink-0" /> : <TrendingDown size={14} className="flex-shrink-0" />}
               <bdi className="tabular-nums">
                 {isGain ? "+" : "-"}
                 {formatCurrency(Math.abs(delta), fullLocale)}
