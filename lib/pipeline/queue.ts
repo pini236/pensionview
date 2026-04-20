@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export function buildPipelineSteps(pageCount: number, isBackfill = false): string[] {
@@ -114,5 +115,11 @@ export async function triggerNextStep(reportId: string, completedStep: string, p
   const params = new URLSearchParams({ reportId, pageCount: String(pageCount) });
   if (pageMatch) params.set("page", pageMatch[1]);
 
-  fetch(`${APP_URL}${route}?${params}`, { method: "POST" }).catch(() => {});
+  // Wrap in waitUntil so Vercel keeps the function alive until the next step
+  // has been kicked off. Without this, the parent function exits before the
+  // child fetch connects and the chain silently breaks.
+  waitUntil(
+    fetch(`${APP_URL}${route}?${params}`, { method: "POST" })
+      .catch((err) => console.error("Failed to trigger next step:", err))
+  );
 }
