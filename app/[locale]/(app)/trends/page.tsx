@@ -13,6 +13,7 @@ import {
 import { LongTermPlaceholder } from "@/components/trends/LongTermPlaceholder";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { getActiveMember } from "@/lib/active-member";
+import { formatCurrency } from "@/lib/format";
 import type { Member, ProductType } from "@/lib/types";
 
 export async function generateMetadata({
@@ -270,6 +271,7 @@ async function CombinedTrends({
   memberIds: string[];
   locale: string;
 }) {
+  const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   // Last two reports per member
   const { data: doneReports } = await supabase
     .from("reports")
@@ -451,11 +453,8 @@ async function CombinedTrends({
                       }`}
                     >
                       <bdi>
-                        {isGain ? "+" : ""}
-                        {Math.round(delta).toLocaleString(
-                          locale === "he" ? "he-IL" : "en-IL"
-                        )}{" "}
-                        ₪
+                        {isGain ? "+" : "-"}
+                        {formatCurrency(Math.abs(delta), fullLocale)}
                         {deltaPct !== null && (
                           <span className="ms-1 text-text-muted">
                             ({isGain ? "+" : ""}

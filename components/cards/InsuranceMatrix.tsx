@@ -112,7 +112,7 @@ export function InsuranceMatrix({ members, data }: InsuranceMatrixProps) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="text-start text-[11px] font-medium uppercase tracking-wide text-text-muted">
+              <th className="text-start text-xs font-medium uppercase tracking-wide text-text-muted">
                 &nbsp;
               </th>
               {members.map((m) => (
@@ -122,7 +122,7 @@ export function InsuranceMatrix({ members, data }: InsuranceMatrixProps) {
                 >
                   <div className="flex flex-col items-center gap-1">
                     <MemberAvatar member={m} size="sm" />
-                    <span className="max-w-[6rem] truncate text-[11px]">
+                    <span className="max-w-[6rem] truncate text-xs">
                       {m.name}
                     </span>
                   </div>

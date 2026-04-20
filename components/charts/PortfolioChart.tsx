@@ -24,6 +24,17 @@ const compactCurrency = (v: number) => {
   return `₪${v}`;
 };
 
+// Theme-aware colors via CSS variables. Recharts forwards these to the
+// underlying SVG/style attributes, so the chart re-paints when the theme
+// toggles (--color-* values change at the document root).
+const chartColors = {
+  surface: "var(--color-surface)",
+  surfaceHover: "var(--color-surface-hover)",
+  textMuted: "var(--color-text-muted)",
+  textPrimary: "var(--color-text-primary)",
+  gain: "var(--color-gain)",
+};
+
 export function PortfolioChart({ data }: PortfolioChartProps) {
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
@@ -61,20 +72,21 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
             <AreaChart data={filtered} margin={{ top: 16, right: 16, bottom: 8, left: 16 }}>
               <defs>
                 <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22C55E" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                  <stop offset="0%" stopColor={chartColors.gain} stopOpacity={0.4} />
+                  <stop offset="100%" stopColor={chartColors.gain} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-              <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString(fullLocale, { month: "short" })} />
-              <YAxis orientation={yAxisOrientation} stroke="#94A3B8" fontSize={11} tickFormatter={(v) => compactCurrency(v)} width={56} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.surfaceHover} />
+              <XAxis dataKey="date" stroke={chartColors.textMuted} fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString(fullLocale, { month: "short" })} />
+              <YAxis orientation={yAxisOrientation} stroke={chartColors.textMuted} fontSize={11} tickFormatter={(v) => compactCurrency(v)} width={56} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#1E293B", border: "none", borderRadius: 8 }}
-                labelStyle={{ color: "#F8FAFC" }}
+                contentStyle={{ backgroundColor: chartColors.surface, border: "none", borderRadius: 8 }}
+                labelStyle={{ color: chartColors.textPrimary }}
+                itemStyle={{ color: chartColors.textPrimary }}
                 formatter={(value) => [formatCurrency(Number(value), fullLocale), ""]}
                 labelFormatter={(label) => new Date(String(label)).toLocaleDateString(fullLocale, { year: "numeric", month: "long" })}
               />
-              <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} fill="url(#portfolioGradient)" dot={{ fill: "#22C55E", r: 4 }} />
+              <Area type="monotone" dataKey="value" stroke={chartColors.gain} strokeWidth={2} fill="url(#portfolioGradient)" dot={{ fill: chartColors.gain, r: 4 }} />
             </AreaChart>
           </ResponsiveContainer>
         )}

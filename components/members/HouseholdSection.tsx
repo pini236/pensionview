@@ -175,7 +175,7 @@ export function HouseholdSection() {
                   <p className="truncate text-sm font-medium text-text-primary">
                     {m.name}
                     {m.is_self && (
-                      <span className="ms-2 rounded-full bg-surface px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wide text-text-muted">
+                      <span className="ms-2 rounded-full bg-surface px-1.5 py-0.5 text-xs font-normal uppercase tracking-wide text-text-muted">
                         {tRel("self")}
                       </span>
                     )}

@@ -89,7 +89,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 lg:max-w-2xl">
-      <h1 className="text-2xl font-bold text-text-primary">{t("language") === "Language" ? "Settings" : "הגדרות"}</h1>
+      <h1 className="text-2xl font-bold text-text-primary">{t("title")}</h1>
 
       <section className="rounded-xl bg-surface p-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">

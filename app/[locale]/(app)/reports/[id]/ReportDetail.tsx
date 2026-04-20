@@ -85,11 +85,11 @@ export function ReportDetail({
             <table className="w-full min-w-[480px] text-sm">
               <thead>
                 <tr className="border-b border-background/30 text-xs text-text-muted">
-                  <th className="p-3 text-start font-normal">קרן</th>
-                  <th className="p-3 text-end font-normal">חודשי</th>
-                  <th className="p-3 text-end font-normal">שנתי</th>
-                  <th className="p-3 text-end font-normal">36 חוד׳</th>
-                  <th className="p-3 text-end font-normal">60 חוד׳</th>
+                  <th className="p-3 text-start font-normal">{t("tableHeaders.fund")}</th>
+                  <th className="p-3 text-end font-normal">{t("tableHeaders.monthly")}</th>
+                  <th className="p-3 text-end font-normal">{t("tableHeaders.yearly")}</th>
+                  <th className="p-3 text-end font-normal">{t("tableHeaders.threeYear")}</th>
+                  <th className="p-3 text-end font-normal">{t("tableHeaders.fiveYear")}</th>
                 </tr>
               </thead>
               <tbody>

@@ -43,6 +43,13 @@
       "returns": "תשואות",
       "deposits": "הפקדות",
       "insurance": "ביטוח"
+    },
+    "tableHeaders": {
+      "fund": "קרן",
+      "monthly": "חודשי",
+      "yearly": "שנתי",
+      "threeYear": "36 חוד׳",
+      "fiveYear": "60 חוד׳"
     }
   },
   "common": {
@@ -61,9 +68,11 @@
   "login": {
     "title": "PensionView",
     "subtitle": "מבטחים את היום, משקיעים למחר",
-    "signIn": "התחבר עם Google"
+    "signIn": "התחבר עם Google",
+    "or": "או"
   },
   "settings": {
+    "title": "הגדרות",
     "language": "שפה",
     "connectGmail": "חבר Gmail",
     "connected": "מחובר",

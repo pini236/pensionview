@@ -59,7 +59,7 @@ export default function LoginPage() {
 
         <div className="flex w-full items-center gap-3 text-xs text-text-muted">
           <div className="h-px flex-1 bg-surface" />
-          <span>או</span>
+          <span>{t("or")}</span>
           <div className="h-px flex-1 bg-surface" />
         </div>
 

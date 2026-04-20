@@ -25,21 +25,21 @@ export function InsuranceSummary({ healthExists, lifeAmount, disabilityAmount }:
     >
       <div className="relative overflow-hidden rounded-xl border border-white/5 bg-surface/80 p-3 backdrop-blur-xl">
         <Heart size={18} className="mb-2 text-text-muted" />
-        <p className="text-[10px] uppercase tracking-wide text-text-muted">{t("health")}</p>
+        <p className="text-xs uppercase tracking-wide text-text-muted">{t("health")}</p>
         <p className={`mt-1 text-sm font-medium ${healthExists ? "text-gain" : "text-text-muted"}`}>
           {healthExists ? t("active") : t("inactive")}
         </p>
       </div>
       <div className="relative overflow-hidden rounded-xl border border-white/5 bg-surface/80 p-3 backdrop-blur-xl">
         <Home size={18} className="mb-2 text-text-muted" />
-        <p className="text-[10px] uppercase tracking-wide text-text-muted">{t("life")}</p>
+        <p className="text-xs uppercase tracking-wide text-text-muted">{t("life")}</p>
         <p className="mt-1 text-sm font-medium text-text-primary">
           <bdi>{formatCurrency(lifeAmount, fullLocale)}</bdi>
         </p>
       </div>
       <div className="relative overflow-hidden rounded-xl border border-white/5 bg-surface/80 p-3 backdrop-blur-xl">
         <Shield size={18} className="mb-2 text-text-muted" />
-        <p className="text-[10px] uppercase tracking-wide text-text-muted">{t("disability")}</p>
+        <p className="text-xs uppercase tracking-wide text-text-muted">{t("disability")}</p>
         <p className="mt-1 text-sm font-medium text-text-primary">
           <bdi>{formatCurrency(disabilityAmount, fullLocale)}</bdi>
         </p>

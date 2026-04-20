@@ -43,6 +43,13 @@
       "returns": "Returns",
       "deposits": "Deposits",
       "insurance": "Insurance"
+    },
+    "tableHeaders": {
+      "fund": "Fund",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "threeYear": "36mo",
+      "fiveYear": "60mo"
     }
   },
   "common": {
@@ -61,9 +68,11 @@
   "login": {
     "title": "PensionView",
     "subtitle": "Securing today, investing for tomorrow",
-    "signIn": "Sign in with Google"
+    "signIn": "Sign in with Google",
+    "or": "or"
   },
   "settings": {
+    "title": "Settings",
     "language": "Language",
     "connectGmail": "Connect Gmail",
     "connected": "Connected",

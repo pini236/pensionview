@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { HeroCard } from "@/components/cards/HeroCard";
 import { FundCardGrid } from "@/components/cards/FundCardGrid";
@@ -47,10 +48,18 @@ export default async function DashboardPage({
     return <div className="text-text-muted">Profile not found</div>;
   }
 
+  const t = await getTranslations({ locale, namespace: "dashboard" });
+  const monthlyInsightLabel = t("monthlyInsight");
+
   // Single-member view (default UX)
   if (active.kind === "single") {
     return (
-      <SingleMemberDashboard supabase={supabase} member={active.member} locale={locale} />
+      <SingleMemberDashboard
+        supabase={supabase}
+        member={active.member}
+        locale={locale}
+        monthlyInsightLabel={monthlyInsightLabel}
+      />
     );
   }
 
@@ -63,6 +72,7 @@ export default async function DashboardPage({
       memberIds={active.householdMemberIds}
       selfMemberId={selfMember.id}
       locale={locale}
+      monthlyInsightLabel={monthlyInsightLabel}
     />
   );
 }
@@ -76,10 +86,12 @@ async function SingleMemberDashboard({
   supabase,
   member,
   locale,
+  monthlyInsightLabel,
 }: {
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
   member: Member;
   locale: string;
+  monthlyInsightLabel: string;
 }) {
   const { data: profile } = await supabase
     .from("profiles")
@@ -232,7 +244,7 @@ async function SingleMemberDashboard({
 
       {insight && (
         <div className="min-w-0 lg:col-span-4 xl:col-span-5">
-          <InsightCard text={insight.summary_text} label="תובנה חודשית" />
+          <InsightCard text={insight.summary_text} label={monthlyInsightLabel} />
         </div>
       )}
 
@@ -292,12 +304,14 @@ async function CombinedDashboard({
   memberIds,
   selfMemberId,
   locale,
+  monthlyInsightLabel,
 }: {
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
   members: Member[];
   memberIds: string[];
   selfMemberId: string;
   locale: string;
+  monthlyInsightLabel: string;
 }) {
   // Household head's retirement goal + DOB (for currentAge in combined view).
   const { data: headProfile } = await supabase
@@ -557,7 +571,7 @@ async function CombinedDashboard({
         <div className="min-w-0 lg:col-span-4 xl:col-span-5">
           <InsightCard
             text={insight.summary_text}
-            label={selfMember ? `${selfMember.name} · תובנה חודשית` : "תובנה חודשית"}
+            label={selfMember ? `${selfMember.name} · ${monthlyInsightLabel}` : monthlyInsightLabel}
           />
         </div>
       )}
