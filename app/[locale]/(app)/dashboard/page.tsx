@@ -5,12 +5,19 @@ import { FundCardGrid } from "@/components/cards/FundCardGrid";
 import { InsuranceSummary } from "@/components/cards/InsuranceSummary";
 import { InsuranceMatrix, type InsuranceMatrixRow } from "@/components/cards/InsuranceMatrix";
 import { InsightCard } from "@/components/cards/InsightCard";
+import { DepositAlertsCard } from "@/components/alerts/DepositAlertsCard";
+import { FeeAnalysisCard } from "@/components/insights/FeeAnalysisCard";
 import { PensionProjection } from "@/components/charts/PensionProjection";
 import { HouseholdHero } from "@/components/members/HouseholdHero";
 import type { ShareSegment } from "@/components/members/MemberShareBar";
 import { NoReportsState } from "@/components/empty-states/NoReportsState";
 import { getActiveMember } from "@/lib/active-member";
-import type { Member, ProductType } from "@/lib/types";
+import {
+  detectDepositAlerts,
+  groupFundHistories,
+} from "@/lib/insights/deposit-alerts";
+import { analyzeFees } from "@/lib/insights/fee-analyzer";
+import type { Member, ProductType, SavingsProduct } from "@/lib/types";
 
 export async function generateMetadata({
   searchParams,
@@ -128,6 +135,80 @@ async function SingleMemberDashboard({
     .eq("report_id", latestReport.id)
     .maybeSingle();
 
+  // -------------------------------------------------------------------------
+  // Sparkline data prep — last 6 reports, build per-fund balance history.
+  // Self-contained block so it doesn't conflict with parallel features.
+  // -------------------------------------------------------------------------
+  const { data: sparkReports } = await supabase
+    .from("reports")
+    .select("id, report_date")
+    .eq("profile_id", profile.id)
+    .eq("status", "done")
+    .order("report_date", { ascending: false })
+    .limit(6);
+
+  const sparkReportIds = (sparkReports ?? []).map((r) => r.id);
+  const sparkReportDateById = new Map(
+    (sparkReports ?? []).map((r) => [r.id, r.report_date as string])
+  );
+
+  const historyByFundKey = new Map<string, number[]>();
+  if (sparkReportIds.length > 0) {
+    const { data: sparkSavings } = await supabase
+      .from("savings_products")
+      .select("report_id, fund_number, product_name, balance")
+      .in("report_id", sparkReportIds);
+
+    const seenKeys = new Set<string>();
+    for (const row of sparkSavings ?? []) {
+      const key = row.fund_number ?? row.product_name;
+      if (!key) continue;
+      seenKeys.add(key);
+    }
+    for (const key of seenKeys) {
+      const points = (sparkSavings ?? [])
+        .filter((s) => (s.fund_number ?? s.product_name) === key)
+        .map((s) => ({
+          date: sparkReportDateById.get(s.report_id) ?? "",
+          balance: Number(s.balance ?? 0),
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((p) => p.balance);
+      historyByFundKey.set(key, points);
+    }
+  }
+
+  // Deposit verification: pull latest report + up to 3 prior so we can compare
+  // monthly_deposit per fund across reports.
+  const { data: historyReports } = await supabase
+    .from("reports")
+    .select("id, report_date")
+    .eq("profile_id", profile.id)
+    .eq("status", "done")
+    .order("report_date", { ascending: false })
+    .limit(4);
+
+  const historyReportIds = (historyReports ?? []).map((r) => r.id);
+  let depositAlerts: ReturnType<typeof detectDepositAlerts> = [];
+  if (historyReportIds.length >= 2) {
+    const { data: historySavings } = await supabase
+      .from("savings_products")
+      .select("report_id, fund_number, product_name, provider, monthly_deposit")
+      .in("report_id", historyReportIds);
+
+    const reportDateById = new Map(
+      (historyReports ?? []).map((r) => [r.id, r.report_date])
+    );
+    const rows = (historySavings ?? []).map((s) => ({
+      fund_number: s.fund_number,
+      product_name: s.product_name,
+      provider: s.provider,
+      monthly_deposit: s.monthly_deposit,
+      report_date: reportDateById.get(s.report_id) ?? "",
+    }));
+    depositAlerts = detectDepositAlerts(groupFundHistories(rows));
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
       {summary && (
@@ -147,6 +228,16 @@ async function SingleMemberDashboard({
         </div>
       )}
 
+      <div className="lg:col-span-12">
+        <DepositAlertsCard alerts={depositAlerts} />
+      </div>
+
+      <div className="lg:col-span-12">
+        <FeeAnalysisCard
+          analyses={analyzeFees((savings ?? []) as SavingsProduct[])}
+        />
+      </div>
+
       <div className="lg:col-span-8 xl:col-span-8">
         <FundCardGrid
           funds={(savings || []).map((fund) => ({
@@ -156,6 +247,7 @@ async function SingleMemberDashboard({
             product_type: fund.product_type as ProductType,
             balance: fund.balance,
             monthly_return_pct: fund.monthly_return_pct,
+            history: historyByFundKey.get(fund.fund_number ?? fund.product_name),
           }))}
         />
       </div>
@@ -319,6 +411,12 @@ async function CombinedDashboard({
           />
         </div>
       )}
+
+      <div className="lg:col-span-12">
+        <FeeAnalysisCard
+          analyses={analyzeFees((savings ?? []) as SavingsProduct[])}
+        />
+      </div>
 
       <div className="lg:col-span-8 xl:col-span-8">
         <FundCardGrid funds={fundsWithMember} />
