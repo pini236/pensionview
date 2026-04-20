@@ -31,7 +31,7 @@
 }
 
 body {
-  font-family: var(--font-sans-loaded), 'IBM Plex Sans', sans-serif;
+  font-family: var(--font-sans-loaded), var(--font-sans-hebrew), 'IBM Plex Sans', sans-serif;
   background-color: var(--color-background);
   color: var(--color-text-primary);
 }

@@ -1,9 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
-import Link from "next/link";
 import { motion } from "motion/react";
-import { Settings } from "lucide-react";
 import { MemberSwitcher } from "@/components/members/MemberSwitcher";
 import type { Member } from "@/lib/types";
 
@@ -12,8 +9,6 @@ interface TopBarProps {
 }
 
 export function TopBar({ members }: TopBarProps) {
-  const locale = useLocale();
-
   return (
     <motion.header
       initial={{ y: -56, opacity: 0 }}
@@ -25,12 +20,6 @@ export function TopBar({ members }: TopBarProps) {
         <div className="min-w-0 flex-1">
           <MemberSwitcher members={members} variant="compact" />
         </div>
-        <Link
-          href={`/${locale}/settings`}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text-muted transition-colors hover:text-text-primary cursor-pointer"
-        >
-          <Settings size={22} />
-        </Link>
       </div>
     </motion.header>
   );
