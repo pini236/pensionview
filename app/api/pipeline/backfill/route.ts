@@ -17,7 +17,9 @@ function parseReportDate(
   if (explicit) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(explicit)) return null;
     // sanity: month 01–12, day 01–31
-    const [y, m, d] = explicit.split("-").map(Number);
+    const parts = explicit.split("-").map(Number);
+    const m = parts[1];
+    const d = parts[2];
     if (m < 1 || m > 12 || d < 1 || d > 31) return null;
     return explicit;
   }
