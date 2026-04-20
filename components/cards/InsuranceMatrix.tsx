@@ -107,7 +107,8 @@ export function InsuranceMatrix({ members, data }: InsuranceMatrixProps) {
         </p>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Desktop: matrix table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
@@ -157,6 +158,46 @@ export function InsuranceMatrix({ members, data }: InsuranceMatrixProps) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: stacked per-coverage cards */}
+      <div className="md:hidden space-y-3">
+        {rows.map(({ key, label, icon: Icon, render }) => (
+          <div
+            key={key}
+            className="rounded-lg border border-surface-hover/40 bg-background/40 p-3"
+          >
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-text-muted">
+              <Icon size={14} />
+              <span>{label}</span>
+            </div>
+            <ul className="space-y-2">
+              {members.map((m) => {
+                const row = data[m.id] ?? {
+                  health: null,
+                  life: null,
+                  disability: null,
+                };
+                return (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <MemberAvatar member={m} size="sm" />
+                      <span className="truncate text-sm text-text-primary">
+                        {m.name}
+                      </span>
+                    </div>
+                    <div className="text-sm text-text-primary">
+                      {render(row)}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </div>
 
       {gaps.length > 0 && (

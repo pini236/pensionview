@@ -51,9 +51,9 @@ export function ReturnsBarChart({ funds }: ReturnsBarChartProps) {
       />
       <div className="h-72 lg:h-80 rounded-xl bg-surface p-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 56, bottom: 8, left: 56 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 40, bottom: 8, left: 8 }}>
             <XAxis type="number" stroke="#94A3B8" fontSize={11} tickFormatter={(v) => formatPercent(v, fullLocale)} />
-            <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={11} width={140} />
+            <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={11} width={90} />
             <Tooltip
               contentStyle={{ backgroundColor: "#0F172A", border: "1px solid #334155", borderRadius: 8 }}
               labelStyle={{ color: "#F8FAFC" }}

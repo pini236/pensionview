@@ -34,7 +34,7 @@ export default async function AppLayout({
       <FloatingParticles />
       <TopBar members={members} />
       <Sidebar members={members} />
-      <main className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 lg:ms-60 lg:px-12 lg:pb-8 lg:pt-8">
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-4 md:px-8 lg:ms-60 lg:px-12 lg:pb-8 lg:pt-8">
         {children}
       </main>
       <BottomNav />

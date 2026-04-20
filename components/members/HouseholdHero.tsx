@@ -44,7 +44,7 @@ export function HouseholdHero({
         <p className="text-xs uppercase tracking-wide text-text-muted">{eyebrow}</p>
         <div>
           <p className="text-sm text-text-muted">{t("totalSavings")}</p>
-          <p className="mt-1 text-[32px] font-medium leading-tight">
+          <p className="mt-1 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-medium leading-tight tabular-nums break-all">
             <span className="bg-gradient-to-br from-text-primary via-text-primary to-text-muted bg-clip-text text-transparent">
               <bdi>
                 <AnimatedNumber

@@ -25,7 +25,7 @@ export function Sidebar({ members }: SidebarProps) {
   const locale = useLocale();
 
   return (
-    <aside className="fixed top-0 start-0 hidden h-screen w-60 border-e border-surface bg-background/95 backdrop-blur-sm lg:flex lg:flex-col z-40">
+    <aside className="fixed top-0 start-0 hidden h-screen w-60 border-e border-surface bg-background/95 backdrop-blur-sm lg:bg-background lg:backdrop-blur-none lg:flex lg:flex-col z-40">
       <motion.div
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -49,18 +49,24 @@ export function Sidebar({ members }: SidebarProps) {
             >
               <Link
                 href={fullHref}
-                className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors cursor-pointer ${
+                className={`relative flex items-center gap-3 rounded-lg px-3 text-[15px] transition-colors cursor-pointer ${
                   isActive
-                    ? "text-cta"
-                    : "text-text-muted hover:text-text-primary"
+                    ? "py-3 font-medium text-cta"
+                    : "py-2.5 text-text-muted hover:text-text-primary"
                 }`}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-lg bg-surface"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
+                  <>
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-lg bg-surface"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="absolute start-0 top-1/2 z-10 h-6 w-1 -translate-y-1/2 rounded-full bg-cta"
+                    />
+                  </>
                 )}
                 <span className="relative z-10 flex items-center gap-3 min-w-0">
                   <Icon size={18} className="flex-shrink-0" />

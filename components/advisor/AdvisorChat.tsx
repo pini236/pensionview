@@ -66,7 +66,7 @@ export function AdvisorChat() {
         onClick={() => setOpen(!open)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-24 end-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-cta text-background shadow-[0_8px_24px_-8px_rgba(34,197,94,0.6)] cursor-pointer lg:bottom-8"
+        className="fixed bottom-24 end-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-cta text-background shadow-[0_8px_24px_-8px_rgba(34,197,94,0.6)] cursor-pointer lg:bottom-8"
         aria-label={isHebrew ? "פתח יועץ" : "Open advisor"}
       >
         <AnimatePresence mode="wait">
@@ -90,7 +90,7 @@ export function AdvisorChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-44 end-4 z-40 flex h-[min(640px,80vh)] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl lg:bottom-28"
+            className="fixed bottom-24 end-4 z-40 flex h-[min(560px,calc(100vh-9rem))] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl lg:bottom-28"
           >
             {/* Header */}
             <div className="flex items-center gap-2 border-b border-background/40 px-4 py-3">

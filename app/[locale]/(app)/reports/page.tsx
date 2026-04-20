@@ -83,7 +83,7 @@ export default async function ReportsPage({
       {years.map((year) => (
         <section key={year}>
           <h2 className="mb-3 text-sm font-medium text-text-muted">{year}</h2>
-          <div className="space-y-2">
+          <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
             {grouped[year]!.map((report) => {
               const summaryRaw = report.report_summary as
                 | { total_savings: number | null }

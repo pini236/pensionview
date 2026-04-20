@@ -67,16 +67,18 @@ export function HeroCard({
           </p>
         )}
         <p className="text-sm text-text-muted">{t("totalSavings")}</p>
-        <p className="mt-1 text-2xl sm:text-[28px] md:text-[32px] font-medium leading-tight tabular-nums truncate">
-          <span className="bg-gradient-to-br from-text-primary via-text-primary to-text-muted bg-clip-text text-transparent">
-            <bdi>
-              <AnimatedNumber
-                value={totalSavings}
-                format={(n) => formatCurrency(n, fullLocale)}
-              />
-            </bdi>
-          </span>
-        </p>
+        <div className="mt-1 overflow-hidden">
+          <p className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium leading-tight tabular-nums text-balance">
+            <span className="bg-gradient-to-br from-text-primary via-text-primary to-text-muted bg-clip-text text-transparent">
+              <bdi>
+                <AnimatedNumber
+                  value={totalSavings}
+                  format={(n) => formatCurrency(n, fullLocale)}
+                />
+              </bdi>
+            </span>
+          </p>
+        </div>
         {change !== null && changePct !== null && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}

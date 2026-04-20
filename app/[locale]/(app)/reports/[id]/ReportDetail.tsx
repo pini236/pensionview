@@ -80,29 +80,32 @@ export function ReportDetail({
       )}
 
       {tab === "returns" && (
-        <div className="overflow-x-auto rounded-lg bg-surface">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-background/30 text-xs text-text-muted">
-                <th className="p-3 text-start font-normal">קרן</th>
-                <th className="p-3 text-end font-normal">חודשי</th>
-                <th className="p-3 text-end font-normal">שנתי</th>
-                <th className="p-3 text-end font-normal">36 חוד׳</th>
-                <th className="p-3 text-end font-normal">60 חוד׳</th>
-              </tr>
-            </thead>
-            <tbody>
-              {savings.map((fund) => (
-                <tr key={fund.id} className="border-b border-background/30 last:border-0">
-                  <td className="p-3 text-text-primary">{fund.product_name}</td>
-                  <ReturnCell value={fund.monthly_return_pct} locale={fullLocale} />
-                  <ReturnCell value={fund.yearly_return_pct} locale={fullLocale} />
-                  <ReturnCell value={fund.cumulative_return_36m_pct} locale={fullLocale} />
-                  <ReturnCell value={fund.cumulative_return_60m_pct} locale={fullLocale} />
+        <div className="relative rounded-lg bg-surface">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="border-b border-background/30 text-xs text-text-muted">
+                  <th className="p-3 text-start font-normal">קרן</th>
+                  <th className="p-3 text-end font-normal">חודשי</th>
+                  <th className="p-3 text-end font-normal">שנתי</th>
+                  <th className="p-3 text-end font-normal">36 חוד׳</th>
+                  <th className="p-3 text-end font-normal">60 חוד׳</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {savings.map((fund) => (
+                  <tr key={fund.id} className="border-b border-background/30 last:border-0">
+                    <td className="p-3 text-text-primary">{fund.product_name}</td>
+                    <ReturnCell value={fund.monthly_return_pct} locale={fullLocale} />
+                    <ReturnCell value={fund.yearly_return_pct} locale={fullLocale} />
+                    <ReturnCell value={fund.cumulative_return_36m_pct} locale={fullLocale} />
+                    <ReturnCell value={fund.cumulative_return_60m_pct} locale={fullLocale} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="pointer-events-none absolute inset-y-0 end-0 w-8 rounded-e-lg bg-gradient-to-l from-surface to-transparent md:hidden" />
         </div>
       )}
 

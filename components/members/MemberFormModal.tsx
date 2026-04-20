@@ -166,9 +166,9 @@ export function MemberFormModal({
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 20, opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
-          className="w-full max-w-md overflow-hidden rounded-t-2xl bg-surface p-6 shadow-2xl sm:rounded-2xl"
+          className="flex w-full max-h-[90vh] max-w-md flex-col overflow-hidden rounded-t-2xl bg-surface shadow-2xl sm:rounded-2xl"
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-background/40 p-6 pb-4">
             <h2
               id={`${formId}-title`}
               className="text-lg font-semibold text-text-primary"
@@ -185,7 +185,8 @@ export function MemberFormModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-4 overflow-y-auto p-6">
             <Field label={isHe ? "שם" : "Name"} htmlFor={`${formId}-name`}>
               <input
                 id={`${formId}-name`}
@@ -276,12 +277,13 @@ export function MemberFormModal({
             </div>
 
             {error && (
-              <p className="text-sm text-loss" role="alert">
-                {error}
-              </p>
-            )}
+                <p className="text-sm text-loss" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex flex-shrink-0 items-center justify-end gap-2 border-t border-background/40 p-6 pt-4">
               <Button
                 type="button"
                 variant="ghost"

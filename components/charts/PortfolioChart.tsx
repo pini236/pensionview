@@ -51,7 +51,7 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
         value={period}
         onChange={setPeriod}
       />
-      <div className="h-64 lg:h-96 rounded-xl bg-surface p-4">
+      <div className="h-64 lg:h-[28rem] xl:h-[32rem] rounded-xl bg-surface p-4">
         {filtered.length < 2 ? (
           <div className="flex h-full items-center justify-center text-sm text-text-muted">
             לא מספיק נתונים להצגת המגמה בתקופה זו

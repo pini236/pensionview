@@ -260,7 +260,7 @@ async function SingleMemberDashboard({
         />
       </div>
 
-      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4">
+      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-8 lg:self-start">
         <RetirementGoalCard
           projectedFull={summary?.projected_pension_full ?? 0}
           goalMonthly={profile.retirement_goal_monthly ?? null}
@@ -576,7 +576,7 @@ async function CombinedDashboard({
         <FundCardGrid funds={fundsWithMember} />
       </div>
 
-      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4">
+      <aside className="min-w-0 lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-8 lg:self-start">
         <RetirementGoalCard
           projectedFull={totalProjectedFull}
           goalMonthly={headProfile?.retirement_goal_monthly ?? null}
@@ -585,9 +585,11 @@ async function CombinedDashboard({
           monthlyDeposits={totalMonthlyDeposits}
           locale={locale}
         />
-
-        <InsuranceMatrix members={members} data={insuranceData} />
       </aside>
+
+      <div className="min-w-0 lg:col-span-12">
+        <InsuranceMatrix members={members} data={insuranceData} />
+      </div>
     </div>
   );
 }

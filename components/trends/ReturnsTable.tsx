@@ -74,52 +74,55 @@ export function ReturnsTable({ rows }: ReturnsTableProps) {
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="overflow-x-auto px-2 pb-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-text-muted">
-                    <th className="px-3 py-2 text-start font-normal">
-                      {labels.fund}
-                    </th>
-                    <th className="px-3 py-2 text-end font-normal">
-                      {labels.monthly}
-                    </th>
-                    <th className="px-3 py-2 text-end font-normal">
-                      {labels.yearly}
-                    </th>
-                    <th className="px-3 py-2 text-end font-normal">
-                      {labels.threeYear}
-                    </th>
-                    <th className="px-3 py-2 text-end font-normal">
-                      {labels.fiveYear}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-t border-surface-hover/40"
-                    >
-                      <td className="truncate px-3 py-2 text-text-primary">
-                        {row.productName ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-end">
-                        <PctCell value={row.monthly} locale={fullLocale} />
-                      </td>
-                      <td className="px-3 py-2 text-end">
-                        <PctCell value={row.yearly} locale={fullLocale} />
-                      </td>
-                      <td className="px-3 py-2 text-end">
-                        <PctCell value={row.cumulative36m} locale={fullLocale} />
-                      </td>
-                      <td className="px-3 py-2 text-end">
-                        <PctCell value={row.cumulative60m} locale={fullLocale} />
-                      </td>
+            <div className="relative px-2 pb-4">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] text-sm">
+                  <thead>
+                    <tr className="text-text-muted">
+                      <th className="px-3 py-2 text-start font-normal">
+                        {labels.fund}
+                      </th>
+                      <th className="px-3 py-2 text-end font-normal">
+                        {labels.monthly}
+                      </th>
+                      <th className="px-3 py-2 text-end font-normal">
+                        {labels.yearly}
+                      </th>
+                      <th className="px-3 py-2 text-end font-normal">
+                        {labels.threeYear}
+                      </th>
+                      <th className="px-3 py-2 text-end font-normal">
+                        {labels.fiveYear}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-t border-surface-hover/40"
+                      >
+                        <td className="truncate px-3 py-2 text-text-primary">
+                          {row.productName ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-end">
+                          <PctCell value={row.monthly} locale={fullLocale} />
+                        </td>
+                        <td className="px-3 py-2 text-end">
+                          <PctCell value={row.yearly} locale={fullLocale} />
+                        </td>
+                        <td className="px-3 py-2 text-end">
+                          <PctCell value={row.cumulative36m} locale={fullLocale} />
+                        </td>
+                        <td className="px-3 py-2 text-end">
+                          <PctCell value={row.cumulative60m} locale={fullLocale} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 end-0 w-8 bg-gradient-to-l from-surface to-transparent md:hidden" />
             </div>
           </motion.div>
         )}
