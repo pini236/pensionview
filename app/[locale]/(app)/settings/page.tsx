@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useRouter, usePathname } from "next/navigation";
-import { Cake, Globe, Mail, Sun, Moon, Upload } from "lucide-react";
+import { Cake, Globe, Mail, Sun, Moon, Target, Upload } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { HouseholdSection } from "@/components/members/HouseholdSection";
@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [dobSaved, setDobSaved] = useState(false);
   const dobSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dobSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [retirementGoal, setRetirementGoal] = useState<string>("");
+  const [retirementAge, setRetirementAge] = useState<string>("67");
 
   useEffect(() => {
     setMounted(true);
@@ -30,12 +32,18 @@ export default function SettingsPage() {
       if (!user?.email) return;
 
       const { data } = await supabase.from("profiles")
-        .select("google_access_token, date_of_birth")
+        .select("google_access_token, date_of_birth, retirement_goal_monthly, retirement_age")
         .eq("email", user.email)
         .single();
 
       setGmailConnected(!!data?.google_access_token);
       if (data?.date_of_birth) setDob(data.date_of_birth);
+      if (data?.retirement_goal_monthly != null) {
+        setRetirementGoal(String(data.retirement_goal_monthly));
+      }
+      if (data?.retirement_age != null) {
+        setRetirementAge(String(data.retirement_age));
+      }
     };
     loadProfile();
   }, []);
@@ -128,6 +136,56 @@ export default function SettingsPage() {
           >
             {locale === "he" ? "✓ נשמר" : "✓ saved"}
           </span>
+        </div>
+      </section>
+
+      <section id="retirement" className="rounded-xl bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
+          <Target size={18} className="text-text-muted" />
+          {locale === "he" ? "יעד פרישה" : "Retirement goal"}
+        </div>
+        <div className="space-y-2">
+          <label className="block">
+            <span className="text-xs text-text-muted">
+              {locale === "he" ? "סכום חודשי בפרישה (₪)" : "Monthly income at retirement (₪)"}
+            </span>
+            <input
+              type="number"
+              value={retirementGoal}
+              onChange={(e) => setRetirementGoal(e.target.value)}
+              onBlur={async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user?.email) return;
+                await supabase.from("profiles")
+                  .update({ retirement_goal_monthly: retirementGoal ? Number(retirementGoal) : null })
+                  .eq("email", user.email);
+              }}
+              className="mt-1 w-full rounded-lg bg-background px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-cta"
+              placeholder="15000"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-text-muted">
+              {locale === "he" ? "גיל פרישה" : "Retirement age"}
+            </span>
+            <input
+              type="number"
+              value={retirementAge}
+              min="50"
+              max="90"
+              onChange={(e) => setRetirementAge(e.target.value)}
+              onBlur={async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user?.email) return;
+                await supabase.from("profiles")
+                  .update({ retirement_age: Number(retirementAge) || 67 })
+                  .eq("email", user.email);
+              }}
+              className="mt-1 w-full rounded-lg bg-background px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-cta"
+            />
+          </label>
         </div>
       </section>
 

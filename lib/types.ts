@@ -100,6 +100,9 @@ export interface Profile {
   avatar_color: AvatarColor | null;
   is_self: boolean;
   deleted_at: string | null;
+  // Retirement Goal Tracker (added by 007_retirement_goal migration)
+  retirement_goal_monthly: number | null;
+  retirement_age: number;
 }
 
 /**

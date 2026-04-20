@@ -7,7 +7,7 @@ import { InsuranceMatrix, type InsuranceMatrixRow } from "@/components/cards/Ins
 import { InsightCard } from "@/components/cards/InsightCard";
 import { DepositAlertsCard } from "@/components/alerts/DepositAlertsCard";
 import { FeeAnalysisCard } from "@/components/insights/FeeAnalysisCard";
-import { PensionProjection } from "@/components/charts/PensionProjection";
+import { RetirementGoalCard } from "@/components/insights/RetirementGoalCard";
 import { HouseholdHero } from "@/components/members/HouseholdHero";
 import type { ShareSegment } from "@/components/members/MemberShareBar";
 import { NoReportsState } from "@/components/empty-states/NoReportsState";
@@ -32,12 +32,15 @@ export async function generateMetadata({
 }
 
 export default async function DashboardPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ member?: string }>;
 }) {
   const supabase = await createServerSupabase();
   const sp = await searchParams;
+  const { locale } = await params;
   const active = await getActiveMember(sp);
 
   if (active.householdMemberIds.length === 0) {
@@ -47,16 +50,19 @@ export default async function DashboardPage({
   // Single-member view (default UX)
   if (active.kind === "single") {
     return (
-      <SingleMemberDashboard supabase={supabase} member={active.member} />
+      <SingleMemberDashboard supabase={supabase} member={active.member} locale={locale} />
     );
   }
 
-  // Combined household view
+  // Combined household view: goal is the household head's (self) goal.
+  const selfMember = active.members.find((m) => m.is_self) ?? active.members[0];
   return (
     <CombinedDashboard
       supabase={supabase}
       members={active.members}
       memberIds={active.householdMemberIds}
+      selfMemberId={selfMember.id}
+      locale={locale}
     />
   );
 }
@@ -69,13 +75,15 @@ export default async function DashboardPage({
 async function SingleMemberDashboard({
   supabase,
   member,
+  locale,
 }: {
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
   member: Member;
+  locale: string;
 }) {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, date_of_birth")
+    .select("id, date_of_birth, retirement_goal_monthly, retirement_age")
     .eq("id", member.id)
     .single();
 
@@ -253,13 +261,14 @@ async function SingleMemberDashboard({
       </div>
 
       <aside className="lg:col-span-4 xl:col-span-4 space-y-4">
-        {summary && summary.projected_pension_full !== null && (
-          <PensionProjection
-            projectedFull={summary.projected_pension_full || 0}
-            projectedBase={summary.projected_pension_base || 0}
-            currentAge={currentAge}
-          />
-        )}
+        <RetirementGoalCard
+          projectedFull={summary?.projected_pension_full ?? 0}
+          goalMonthly={profile.retirement_goal_monthly ?? null}
+          currentAge={currentAge}
+          retirementAge={profile.retirement_age ?? 67}
+          monthlyDeposits={summary?.monthly_deposits ?? 0}
+          locale={locale}
+        />
 
         {summary && (
           <InsuranceSummary
@@ -281,11 +290,27 @@ async function CombinedDashboard({
   supabase,
   members,
   memberIds,
+  selfMemberId,
+  locale,
 }: {
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
   members: Member[];
   memberIds: string[];
+  selfMemberId: string;
+  locale: string;
 }) {
+  // Household head's retirement goal + DOB (for currentAge in combined view).
+  const { data: headProfile } = await supabase
+    .from("profiles")
+    .select("retirement_goal_monthly, retirement_age, date_of_birth")
+    .eq("id", selfMemberId)
+    .single();
+
+  const headDob = headProfile?.date_of_birth ?? null;
+  const headAge = headDob
+    ? Math.floor((Date.now() - new Date(headDob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+
   // Latest report per member, in one query
   const { data: doneReports } = await supabase
     .from("reports")
@@ -449,8 +474,8 @@ async function CombinedDashboard({
     (sum, s) => sum + (s.projected_pension_full ?? 0),
     0
   );
-  const totalProjectedBase = (summaries ?? []).reduce(
-    (sum, s) => sum + (s.projected_pension_base ?? 0),
+  const totalMonthlyDeposits = (summaries ?? []).reduce(
+    (sum, s) => sum + (s.monthly_deposits ?? 0),
     0
   );
 
@@ -552,13 +577,14 @@ async function CombinedDashboard({
       </div>
 
       <aside className="lg:col-span-4 xl:col-span-4 space-y-4">
-        {totalProjectedFull > 0 && (
-          <PensionProjection
-            projectedFull={totalProjectedFull}
-            projectedBase={totalProjectedBase}
-            currentAge={null}
-          />
-        )}
+        <RetirementGoalCard
+          projectedFull={totalProjectedFull}
+          goalMonthly={headProfile?.retirement_goal_monthly ?? null}
+          currentAge={headAge}
+          retirementAge={headProfile?.retirement_age ?? 67}
+          monthlyDeposits={totalMonthlyDeposits}
+          locale={locale}
+        />
 
         <InsuranceMatrix members={members} data={insuranceData} />
       </aside>
