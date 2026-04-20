@@ -43,6 +43,18 @@ interface DiscoveredReport {
   reportDate: string;
 }
 
+// Strip ILIKE wildcards (`%`, `_`) and the escape char (`\`) from
+// untrusted input. The recipient name is parsed from the email body so
+// without sanitizing, a crafted greeting could match arbitrary profiles in
+// the household (e.g. `%` matches everything → wrong-profile assignment,
+// or worse, a deliberate match against an admin's profile).
+//
+// TODO: replace ILIKE with a stable `email_recipient_token` column so we
+// can do exact lookups instead of fuzzy substring matching.
+function sanitizeIlikeTerm(input: string): string {
+  return input.replace(/[\\%_]/g, "").trim();
+}
+
 export async function processGmailNotification(historyId: string, profileEmail: string): Promise<DiscoveredReport[]> {
   const admin = createAdminClient();
   const key = process.env.ENCRYPTION_KEY!;
@@ -89,9 +101,12 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const body = extractBody(full.data.payload);
     const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0];
     const recipientMatch = body?.match(/(\S+)\s+שלום/);
-    const recipientName = recipientMatch?.[1];
+    const rawRecipientName = recipientMatch?.[1];
 
-    if (!surenseLink || !recipientName) continue;
+    if (!surenseLink || !rawRecipientName) continue;
+
+    const recipientName = sanitizeIlikeTerm(rawRecipientName);
+    if (!recipientName) continue; // entirely wildcard chars — refuse to match
 
     // Resolve the short URL to get the API endpoint
     const resolved = await fetch(surenseLink, { redirect: "manual" });
@@ -103,6 +118,9 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     // TODO: when supporting multiple households, also filter by household_id
     // (today the auth user's household is the only one — `profile` above is
     // already that household's self anchor).
+    // TODO (defense in depth): after the PDF page-1 extract step, compare
+    // the extracted `client_name` against `recipientName`; if they don't
+    // match, mark the report `failed` with error "recipient mismatch".
     const { data: matchedProfile } = await admin.from("profiles")
       .select("id")
       .ilike("name", `%${recipientName}%`)

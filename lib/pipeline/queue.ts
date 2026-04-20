@@ -118,8 +118,13 @@ export async function triggerNextStep(reportId: string, completedStep: string, p
   // Wrap in waitUntil so Vercel keeps the function alive until the next step
   // has been kicked off. Without this, the parent function exits before the
   // child fetch connects and the chain silently breaks.
+  // The internal secret is forwarded so the target route's
+  // assertInternalRequest() guard accepts the call.
   waitUntil(
-    fetch(`${APP_URL}${route}?${params}`, { method: "POST" })
+    fetch(`${APP_URL}${route}?${params}`, {
+      method: "POST",
+      headers: { "x-pipeline-secret": process.env.PIPELINE_INTERNAL_SECRET ?? "" },
+    })
       .catch((err) => console.error("Failed to trigger next step:", err))
   );
 }

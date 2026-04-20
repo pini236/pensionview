@@ -1,42 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
+import { OAuth2Client } from "google-auth-library";
 import { processGmailNotification } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createQueueEntries, triggerNextStep } from "@/lib/pipeline/queue";
 
+// ---------------------------------------------------------------------------
+// Pub/Sub OIDC verification
+//
+// Pub/Sub push subscriptions sign every request with a Google-issued OIDC
+// JWT in the Authorization: Bearer header. Without verifying it the endpoint
+// would happily accept any caller posting a forged base64 envelope.
+// ---------------------------------------------------------------------------
+
+const PUBSUB_AUDIENCE =
+  process.env.NEXT_PUBLIC_APP_URL || "https://pensionview.vercel.app";
+const oauthClient = new OAuth2Client();
+
+async function verifyPubsubAuth(authHeader: string | null): Promise<boolean> {
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  const token = authHeader.substring(7);
+  try {
+    const ticket = await oauthClient.verifyIdToken({
+      idToken: token,
+      audience: PUBSUB_AUDIENCE,
+    });
+    const payload = ticket.getPayload();
+    return (
+      payload?.email_verified === true &&
+      payload?.iss === "https://accounts.google.com"
+    );
+  } catch (err) {
+    console.error("Pub/Sub OIDC verification failed:", err);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
+  const authed = await verifyPubsubAuth(request.headers.get("authorization"));
+  if (!authed) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const data = JSON.parse(Buffer.from(body.message.data, "base64").toString());
+    const data = JSON.parse(
+      Buffer.from(body.message.data, "base64").toString()
+    );
     const { emailAddress, historyId } = data;
 
     const reports = await processGmailNotification(historyId, emailAddress);
     const admin = createAdminClient();
 
     for (const { profileId, downloadUrl, reportDate } of reports) {
-      const { data: existing } = await admin.from("reports")
+      // Idempotent insert: ignoreDuplicates returns no row if a report for
+      // (profile_id, report_date) already exists, so we naturally skip
+      // duplicates without a separate read-then-write race window.
+      const { data: report, error } = await admin
+        .from("reports")
+        .upsert(
+          {
+            profile_id: profileId,
+            report_date: reportDate,
+            status: "processing",
+            raw_pdf_url: downloadUrl,
+          },
+          { onConflict: "profile_id,report_date", ignoreDuplicates: true }
+        )
         .select("id")
-        .eq("profile_id", profileId)
-        .eq("report_date", reportDate)
         .maybeSingle();
 
-      if (existing) continue;
-
-      const { data: report } = await admin.from("reports").insert({
-        profile_id: profileId,
-        report_date: reportDate,
-        status: "processing",
-        raw_pdf_url: downloadUrl,
-      }).select("id").single();
-
-      if (report) {
-        await createQueueEntries(report.id, 10);
-        await triggerNextStep(report.id, "", 10);
+      if (error) {
+        // Surface DB errors so Pub/Sub retries instead of silently dropping.
+        throw error;
       }
+      if (!report) continue; // duplicate — already inserted on a prior delivery
+
+      await createQueueEntries(report.id, 10);
+      await triggerNextStep(report.id, "", 10);
     }
 
     return NextResponse.json({ ok: true, processed: reports.length });
   } catch (error) {
+    // Returning 500 lets Pub/Sub apply its retry policy. Previously this
+    // returned { ok: true } which silently dropped failed deliveries.
     console.error("Gmail webhook error:", error);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

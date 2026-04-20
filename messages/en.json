@@ -37,7 +37,13 @@
     "balances": "Balances",
     "returns": "Returns",
     "deposits": "Deposits",
-    "insurance": "Insurance"
+    "insurance": "Insurance",
+    "tabs": {
+      "balances": "Balances",
+      "returns": "Returns",
+      "deposits": "Deposits",
+      "insurance": "Insurance"
+    }
   },
   "common": {
     "loading": "Loading...",

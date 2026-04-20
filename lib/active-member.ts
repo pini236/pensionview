@@ -10,6 +10,7 @@
 // client-side switcher (so the value sticks across navigation without an
 // extra server roundtrip).
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Member, Profile, Relationship, AvatarColor } from "@/lib/types";
@@ -50,7 +51,7 @@ function toMember(p: ProfileMemberFields): Member {
   };
 }
 
-export async function getActiveMember(searchParams: {
+export const getActiveMember = cache(async function _getActiveMember(searchParams: {
   member?: string;
 }): Promise<ActiveMember> {
   const supabase = await createServerSupabase();
@@ -139,4 +140,4 @@ export async function getActiveMember(searchParams: {
 
   // No members at all (edge case during onboarding)
   return { kind: "all", members: [], householdMemberIds: [] };
-}
+});

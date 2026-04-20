@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import type { SavingsProduct, InsuranceProduct, InsuranceCoverage, ReportSummary } from "@/lib/types";
+import type { Member, SavingsProduct, InsuranceProduct, InsuranceCoverage, ReportSummary } from "@/lib/types";
 
 type Tab = "balances" | "returns" | "deposits" | "insurance";
 
@@ -17,16 +19,32 @@ interface ReportDetailProps {
   summary: ReportSummary | null;
   savings: SavingsProduct[];
   insurance: InsuranceWithCoverages[];
+  ownerMember?: Member | null;
 }
 
-export function ReportDetail({ reportDate, locale, summary, savings, insurance }: ReportDetailProps) {
+export function ReportDetail({
+  reportDate,
+  locale,
+  summary,
+  savings,
+  insurance,
+  ownerMember,
+}: ReportDetailProps) {
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const [tab, setTab] = useState<Tab>("balances");
+  const t = useTranslations("reports");
 
   const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">
+      {ownerMember && (
+        <div className="flex items-center gap-2">
+          <MemberAvatar member={ownerMember} size="sm" />
+          <span className="text-sm font-medium text-text-primary">{ownerMember.name}</span>
+        </div>
+      )}
+
       <div className="rounded-xl bg-surface p-6">
         <p className="text-sm text-text-muted">{dateLabel}</p>
         <p className="mt-1 text-2xl font-medium text-text-primary">
@@ -36,10 +54,10 @@ export function ReportDetail({ reportDate, locale, summary, savings, insurance }
 
       <SegmentedControl<Tab>
         segments={[
-          { value: "balances", label: "יתרות" },
-          { value: "returns", label: "תשואות" },
-          { value: "deposits", label: "הפקדות" },
-          { value: "insurance", label: "ביטוח" },
+          { value: "balances", label: t("tabs.balances") },
+          { value: "returns", label: t("tabs.returns") },
+          { value: "deposits", label: t("tabs.deposits") },
+          { value: "insurance", label: t("tabs.insurance") },
         ]}
         value={tab}
         onChange={setTab}

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 
 /**
@@ -8,10 +8,14 @@ import { useEffect, useMemo, useState } from "react";
  * decorative — `pointer-events-none` and behind everything.
  *
  * SSR safe: positions and viewport height are only computed after mount.
+ *
+ * Respects `prefers-reduced-motion`: renders nothing when reduced motion is on
+ * (the entire effect *is* the motion — there's no static value to keep).
  */
 export function FloatingParticles({ count = 12 }: { count?: number }) {
   const [mounted, setMounted] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(1000);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     setMounted(true);
@@ -37,7 +41,7 @@ export function FloatingParticles({ count = 12 }: { count?: number }) {
     [count]
   );
 
-  if (!mounted) return null;
+  if (!mounted || reduced) return null;
 
   const travel = -viewportHeight * 1.2;
 

@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -24,10 +23,15 @@
   --color-surface-hover: #F1F5F9;
   --color-text-primary: #0F172A;
   --color-text-muted: #64748B;
+  /* Deeper accents for AA contrast on light surfaces */
+  --color-gain: #16A34A;
+  --color-loss: #D97706;
+  --color-cta: #16A34A;
+  /* Fund colors stay the same — they're accents */
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans-loaded), 'IBM Plex Sans', sans-serif;
   background-color: var(--color-background);
   color: var(--color-text-primary);
 }

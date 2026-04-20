@@ -37,7 +37,13 @@
     "balances": "יתרות",
     "returns": "תשואות",
     "deposits": "הפקדות",
-    "insurance": "ביטוח"
+    "insurance": "ביטוח",
+    "tabs": {
+      "balances": "יתרות",
+      "returns": "תשואות",
+      "deposits": "הפקדות",
+      "insurance": "ביטוח"
+    }
   },
   "common": {
     "loading": "טוען...",

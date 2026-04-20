@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setupGmailWatch } from "@/lib/gmail";
+import { assertVercelCron } from "@/lib/auth-internal";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const unauth = assertVercelCron(request);
+  if (unauth) return unauth;
+
   try {
     const admin = createAdminClient();
     const { data: profiles } = await admin.from("profiles")

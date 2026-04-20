@@ -8,6 +8,7 @@ import { InsightCard } from "@/components/cards/InsightCard";
 import { PensionProjection } from "@/components/charts/PensionProjection";
 import { HouseholdHero } from "@/components/members/HouseholdHero";
 import type { ShareSegment } from "@/components/members/MemberShareBar";
+import { NoReportsState } from "@/components/empty-states/NoReportsState";
 import { getActiveMember } from "@/lib/active-member";
 import type { Member, ProductType } from "@/lib/types";
 
@@ -87,7 +88,7 @@ async function SingleMemberDashboard({
     .limit(1)
     .maybeSingle();
 
-  if (!latestReport) return <div className="text-text-muted">No reports yet</div>;
+  if (!latestReport) return <NoReportsState memberName={member.name} />;
 
   const { data: summary } = await supabase
     .from("report_summary")
@@ -212,7 +213,7 @@ async function CombinedDashboard({
 
   // No data yet
   if (latestReportIds.length === 0) {
-    return <div className="text-text-muted">No reports yet</div>;
+    return <NoReportsState />;
   }
 
   // Pull summaries, savings, insight in parallel

@@ -5,8 +5,12 @@ import { triggerNextStep, failQueue } from "@/lib/pipeline/queue";
 import { google } from "googleapis";
 import { getGoogleOAuth2Client } from "@/lib/google-auth";
 import { Readable } from "stream";
+import { assertInternalRequest } from "@/lib/auth-internal";
 
 export async function POST(request: NextRequest) {
+  const unauth = assertInternalRequest(request);
+  if (unauth) return unauth;
+
   const { searchParams } = new URL(request.url);
   const reportId = searchParams.get("reportId")!;
   const pageCount = Number(searchParams.get("pageCount") || 10);

@@ -3,8 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { decrypt } from "@/lib/crypto";
 import { triggerNextStep, failQueue } from "@/lib/pipeline/queue";
 import { decryptPdf } from "@/lib/pipeline/decrypt-pdf";
+import { assertInternalRequest } from "@/lib/auth-internal";
 
 export async function POST(request: NextRequest) {
+  const unauth = assertInternalRequest(request);
+  if (unauth) return unauth;
+
   const { searchParams } = new URL(request.url);
   const reportId = searchParams.get("reportId")!;
   const pageCount = Number(searchParams.get("pageCount") || 10);

@@ -10,8 +10,8 @@ import {
   XCircle,
   Circle,
   User,
+  Calendar,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 type UploadStatus = "pending" | "processing" | "done" | "error";
 
@@ -21,10 +21,12 @@ interface UploadResult {
   message?: string;
 }
 
+// Shape returned by /api/members (Member type from lib/types). We only need
+// the fields the picker renders.
 interface Profile {
   id: string;
   name: string | null;
-  email: string;
+  email?: string;
 }
 
 export default function BackfillPage() {
@@ -35,6 +37,7 @@ export default function BackfillPage() {
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [profileId, setProfileId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [reportDate, setReportDate] = useState<string>("");
   const [results, setResults] = useState<UploadResult[]>([]);
   const [processing, setProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -42,14 +45,24 @@ export default function BackfillPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Use /api/members instead of a direct Supabase query so the household
+    // filter (and any future RLS) is enforced server-side. The page used to
+    // pull every row from `profiles`, which leaks across households once
+    // multi-tenant lands.
     const loadProfiles = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, name, email")
-        .order("name", { ascending: true });
-      if (data) setProfiles(data as Profile[]);
-      setProfilesLoading(false);
+      try {
+        const res = await fetch("/api/members", { credentials: "include" });
+        if (!res.ok) {
+          setProfiles([]);
+          return;
+        }
+        const json = (await res.json()) as { members?: Profile[] };
+        setProfiles(json.members ?? []);
+      } catch {
+        setProfiles([]);
+      } finally {
+        setProfilesLoading(false);
+      }
     };
     loadProfiles();
   }, []);
@@ -112,6 +125,9 @@ export default function BackfillPage() {
         const formData = new FormData();
         formData.append("file", files[i]);
         formData.append("profileId", profileId);
+        // Only send the date if the user explicitly entered one. Otherwise
+        // let the server fall back to filename parsing.
+        if (reportDate) formData.append("reportDate", reportDate);
 
         const response = await fetch("/api/pipeline/backfill", {
           method: "POST",
@@ -186,12 +202,36 @@ export default function BackfillPage() {
                   <span className="text-sm font-medium text-text-primary">
                     {p.name || (isHe ? "ללא שם" : "Unnamed")}
                   </span>
-                  <span className="text-xs text-text-muted">{p.email}</span>
+                  {p.email && (
+                    <span className="text-xs text-text-muted">{p.email}</span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
+      </section>
+
+      <section className="space-y-3 rounded-xl bg-surface p-6">
+        <label
+          htmlFor="report-date"
+          className="flex items-center gap-2 text-sm font-medium text-text-primary"
+        >
+          <Calendar size={18} className="text-text-muted" />
+          {isHe ? "תאריך הדוח (אופציונלי)" : "Report date (optional)"}
+        </label>
+        <input
+          id="report-date"
+          type="date"
+          value={reportDate}
+          onChange={(e) => setReportDate(e.target.value)}
+          className="w-full rounded-lg border border-surface-hover bg-background p-2 text-sm text-text-primary"
+        />
+        <p className="text-xs text-text-muted">
+          {isHe
+            ? "השאר ריק כדי לזהות אוטומטית מהשם של הקובץ (MM-YYYY). השתמש בשדה זה כשהשם אינו ברור (למשל העלאת דוח מרץ באפריל)."
+            : "Leave blank to auto-detect from the filename (MM-YYYY). Set this when the filename is ambiguous (e.g. uploading a March report on April 1)."}
+        </p>
       </section>
 
       <section className="space-y-4 rounded-xl bg-surface p-6">
@@ -236,8 +276,8 @@ export default function BackfillPage() {
 
         <p className="text-xs text-text-muted">
           {isHe
-            ? "הקבצים חייבים להיות PDF ללא הצפנה"
-            : "Files must be unencrypted PDFs"}
+            ? "הקבצים חייבים להיות PDF ללא הצפנה (עד 25MB)"
+            : "Files must be unencrypted PDFs (up to 25MB)"}
         </p>
 
         <button

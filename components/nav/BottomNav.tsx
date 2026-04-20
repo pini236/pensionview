@@ -4,12 +4,13 @@ import { useTranslations, useLocale } from "next-intl";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { Home, TrendingUp, FileText } from "lucide-react";
+import { Home, TrendingUp, FileText, Settings } from "lucide-react";
 
 const tabs = [
   { key: "home", href: "/dashboard", icon: Home },
   { key: "trends", href: "/trends", icon: TrendingUp },
   { key: "reports", href: "/reports", icon: FileText },
+  { key: "settings", href: "/settings", icon: Settings },
 ] as const;
 
 export function BottomNav() {
@@ -33,7 +34,7 @@ export function BottomNav() {
             <Link
               key={key}
               href={fullHref}
-              className={`relative flex min-h-[44px] min-w-[44px] flex-col items-center gap-1 px-4 py-1 transition-colors cursor-pointer ${
+              className={`relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center gap-1 px-2 py-1 transition-colors cursor-pointer ${
                 isActive ? "text-cta" : "text-text-muted"
               }`}
             >

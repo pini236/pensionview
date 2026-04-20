@@ -1,31 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createQueueEntries } from "@/lib/pipeline/queue";
 
+// Hard caps (defence in depth — Vercel/Next has its own body limit too).
+const MAX_BYTES = 25_000_000; // 25 MB
+const PDF_MAGIC = "%PDF-";
+
+// Accepts either filename-derived MM-YYYY or an explicit `reportDate` form
+// field (YYYY-MM-DD). The explicit field always wins so the user can
+// override an ambiguous filename.
+function parseReportDate(
+  explicit: string | null,
+  fileName: string
+): string | null {
+  if (explicit) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(explicit)) return null;
+    // sanity: month 01–12, day 01–31
+    const [y, m, d] = explicit.split("-").map(Number);
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+    return explicit;
+  }
+
+  const dateMatch = fileName.match(/(\d{2})-(\d{4})/);
+  if (!dateMatch) return null;
+  const month = dateMatch[1];
+  const year = dateMatch[2];
+  const monthNum = Number(month);
+  if (monthNum < 1 || monthNum > 12) return null;
+  const lastDay = new Date(Number(year), monthNum, 0).getDate();
+  return `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // ---------- AuthN: who is calling? ------------------------------------
+    const userClient = await createServerSupabase();
+    const {
+      data: { user },
+    } = await userClient.auth.getUser();
+    if (!user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // ---------- Cheap guard: refuse oversized uploads early ---------------
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength && contentLength > MAX_BYTES) {
+      return NextResponse.json(
+        { error: `File too large (max ${MAX_BYTES} bytes)` },
+        { status: 400 }
+      );
+    }
+
     const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const profileId = formData.get("profileId") as string;
+    const file = formData.get("file") as File | null;
+    const profileId = formData.get("profileId") as string | null;
+    const explicitDate = (formData.get("reportDate") as string | null) || null;
 
     if (!file || !profileId) {
       return NextResponse.json({ error: "Missing file or profileId" }, { status: 400 });
     }
 
+    // ---------- Size + magic-byte validation ------------------------------
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json(
+        { error: `File too large (max ${MAX_BYTES} bytes)` },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    if (buffer.subarray(0, 5).toString() !== PDF_MAGIC) {
+      return NextResponse.json(
+        { error: "File does not look like a PDF (magic bytes mismatch)" },
+        { status: 400 }
+      );
+    }
+
+    // ---------- AuthZ: caller must own a profile in the same household ---
     const admin = createAdminClient();
 
-    // Reject uploads targeted at archived profiles. The backfill picker is
-    // already filtered to non-deleted members on the page, so this is a
-    // server-side safety net for stale form posts.
-    // TODO: when supporting multiple households, also assert the profile
-    // belongs to the operator's household.
-    const { data: profileCheck } = await admin.from("profiles")
-      .select("id, deleted_at")
+    const { data: selfProfile } = await admin
+      .from("profiles")
+      .select("id, household_id")
+      .eq("email", user.email)
+      .eq("is_self", true)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!selfProfile) {
+      return NextResponse.json(
+        { error: "No self profile for caller" },
+        { status: 403 }
+      );
+    }
+
+    const { data: profileCheck } = await admin
+      .from("profiles")
+      .select("id, household_id, deleted_at")
       .eq("id", profileId)
       .maybeSingle();
 
     if (!profileCheck) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+    if (profileCheck.household_id !== selfProfile.household_id) {
+      return NextResponse.json(
+        { error: "Profile is not in your household" },
+        { status: 403 }
+      );
     }
     if (profileCheck.deleted_at) {
       return NextResponse.json(
@@ -34,19 +117,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract date from filename (e.g., "דוח תקופתי 02-2026.pdf" → 2026-02-28)
-    const dateMatch = file.name.match(/(\d{2})-(\d{4})/);
-    let reportDate: string;
-    if (dateMatch) {
-      const month = dateMatch[1];
-      const year = dateMatch[2];
-      const lastDay = new Date(Number(year), Number(month), 0).getDate();
-      reportDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
-    } else {
-      reportDate = new Date().toISOString().slice(0, 10);
+    // ---------- Report date: explicit field wins, else filename ----------
+    const reportDate = parseReportDate(explicitDate, file.name);
+    if (!reportDate) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not determine report date. Provide `reportDate` (YYYY-MM-DD) or use a filename containing MM-YYYY.",
+        },
+        { status: 400 }
+      );
     }
 
-    // Check for existing report
+    // ---------- Duplicate check ------------------------------------------
     const { data: existing } = await admin.from("reports")
       .select("id")
       .eq("profile_id", profileId)
@@ -57,15 +140,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Report already exists for this date" }, { status: 409 });
     }
 
-    // Store as both raw and decrypted (uploaded files are pre-decrypted by user)
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // ---------- Store + enqueue ------------------------------------------
     const decryptedPath = `reports/${profileId}/${reportDate}/decrypted.pdf`;
     await admin.storage.from("reports").upload(decryptedPath, buffer, {
       contentType: "application/pdf",
       upsert: true,
     });
 
-    // Create report record (skip raw_pdf_url since this is a manual upload)
     const { data: report } = await admin.from("reports").insert({
       profile_id: profileId,
       report_date: reportDate,
@@ -75,13 +156,15 @@ export async function POST(request: NextRequest) {
 
     if (!report) throw new Error("Failed to create report");
 
-    // Create queue entries (backfill: skip download step)
     await createQueueEntries(report.id, 10, true);
 
-    // Trigger the first step (decrypt — which for backfill just propagates the file)
+    // Kick off the first pipeline step (decrypt). Forward the internal
+    // pipeline secret so assertInternalRequest() on the target route accepts
+    // the call.
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     fetch(`${APP_URL}/api/pipeline/decrypt?reportId=${report.id}&pageCount=10`, {
       method: "POST",
+      headers: { "x-pipeline-secret": process.env.PIPELINE_INTERNAL_SECRET ?? "" },
     }).catch(() => {});
 
     return NextResponse.json({ ok: true, reportId: report.id, reportDate });

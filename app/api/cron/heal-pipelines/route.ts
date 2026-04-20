@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertVercelCron } from "@/lib/auth-internal";
 
 // Self-healing cron. Even with waitUntil, things can still fail (Vercel timeout,
 // transient errors, network drops). This endpoint scans the processing_queue for
@@ -7,7 +8,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //
 // Schedule cadence varies by Vercel tier — see vercel.json. On Hobby tier the
 // effective cadence is daily; the same route can also be hit manually.
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const unauth = assertVercelCron(request);
+  if (unauth) return unauth;
+
   try {
     const admin = createAdminClient();
 
@@ -74,7 +78,11 @@ export async function GET() {
 
       // Fire and don't await — we only need to kick it off and the cron deadline is short.
       // Each kicked-off route uses waitUntil internally to chain the rest.
-      fetch(`${APP_URL}${route}?${params}`, { method: "POST" }).catch(() => {});
+      // Forward the internal pipeline secret so the target route accepts the call.
+      fetch(`${APP_URL}${route}?${params}`, {
+        method: "POST",
+        headers: { "x-pipeline-secret": process.env.PIPELINE_INTERNAL_SECRET ?? "" },
+      }).catch(() => {});
       healed++;
     }
 
