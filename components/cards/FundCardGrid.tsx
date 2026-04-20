@@ -12,6 +12,7 @@ interface Fund {
   balance: number | null;
   monthly_return_pct: number | null;
   member?: Pick<Member, "name" | "avatar_color"> | null;
+  history?: number[];
 }
 
 const containerVariants = {
@@ -41,6 +42,7 @@ export function FundCardGrid({ funds }: { funds: Fund[] }) {
             balance={fund.balance || 0}
             monthlyReturnPct={fund.monthly_return_pct}
             member={fund.member}
+            history={fund.history}
           />
         </motion.div>
       ))}

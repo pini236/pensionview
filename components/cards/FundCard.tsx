@@ -3,6 +3,7 @@
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import { useLocale } from "next-intl";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
+import { Sparkline } from "@/components/charts/Sparkline";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type { Member, ProductType } from "@/lib/types";
 import { FUND_COLORS } from "@/lib/types";
@@ -15,9 +16,11 @@ interface FundCardProps {
   monthlyReturnPct: number | null;
   /** Optional member chip in the corner (used in combined household view). */
   member?: Pick<Member, "name" | "avatar_color"> | null;
+  /** Optional balance history (oldest -> newest) for the sparkline. */
+  history?: number[];
 }
 
-export function FundCard({ provider, productName, productType, balance, monthlyReturnPct, member }: FundCardProps) {
+export function FundCard({ provider, productName, productType, balance, monthlyReturnPct, member, history }: FundCardProps) {
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const color = FUND_COLORS[productType];
@@ -69,15 +72,20 @@ export function FundCard({ provider, productName, productType, balance, monthlyR
           </div>
           <p className="mt-0.5 text-xs text-text-muted">{provider}</p>
         </div>
-        <div className="text-end">
-          <p className="text-sm font-medium text-text-primary">
-            <bdi>{formatCurrency(balance, fullLocale)}</bdi>
-          </p>
-          {monthlyReturnPct !== null && (
-            <p className={`text-xs ${monthlyReturnPct >= 0 ? "text-gain" : "text-loss"}`}>
-              <bdi>{monthlyReturnPct >= 0 ? "+" : ""}{formatPercent(monthlyReturnPct, fullLocale)}</bdi>
-            </p>
+        <div className="flex items-center gap-3">
+          {history && history.length >= 2 && (
+            <Sparkline values={history} color={color} width={60} height={20} />
           )}
+          <div className="text-end">
+            <p className="text-sm font-medium text-text-primary">
+              <bdi>{formatCurrency(balance, fullLocale)}</bdi>
+            </p>
+            {monthlyReturnPct !== null && (
+              <p className={`text-xs ${monthlyReturnPct >= 0 ? "text-gain" : "text-loss"}`}>
+                <bdi>{monthlyReturnPct >= 0 ? "+" : ""}{formatPercent(monthlyReturnPct, fullLocale)}</bdi>
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>

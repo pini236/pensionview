@@ -343,11 +343,72 @@ async function CombinedDashboard({
     }))
     .filter((s) => s.value > 0);
 
+  // -------------------------------------------------------------------------
+  // Sparkline data prep — last 6 reports per household member, build per-fund
+  // balance history. Keyed by `${profileId}:${fund_number ?? product_name}` so
+  // identical fund_numbers across members don't collide.
+  // -------------------------------------------------------------------------
+  const sparkReportsByProfile = new Map<string, { id: string; report_date: string }[]>();
+  for (const r of doneReports ?? []) {
+    const arr = sparkReportsByProfile.get(r.profile_id) ?? [];
+    if (arr.length < 6) {
+      arr.push({ id: r.id, report_date: r.report_date });
+      sparkReportsByProfile.set(r.profile_id, arr);
+    }
+  }
+  const sparkAllReportIds: string[] = [];
+  const sparkReportToProfile = new Map<string, string>();
+  const sparkReportDateById = new Map<string, string>();
+  for (const [profileId, reports] of sparkReportsByProfile.entries()) {
+    for (const r of reports) {
+      sparkAllReportIds.push(r.id);
+      sparkReportToProfile.set(r.id, profileId);
+      sparkReportDateById.set(r.id, r.report_date);
+    }
+  }
+
+  const historyByFundKey = new Map<string, number[]>();
+  if (sparkAllReportIds.length > 0) {
+    const { data: sparkSavings } = await supabase
+      .from("savings_products")
+      .select("report_id, fund_number, product_name, balance")
+      .in("report_id", sparkAllReportIds);
+
+    const seenKeys = new Set<string>();
+    for (const row of sparkSavings ?? []) {
+      const fundKey = row.fund_number ?? row.product_name;
+      const profileId = sparkReportToProfile.get(row.report_id);
+      if (!fundKey || !profileId) continue;
+      seenKeys.add(`${profileId}:${fundKey}`);
+    }
+    for (const composite of seenKeys) {
+      const colonIdx = composite.indexOf(":");
+      const profileId = composite.slice(0, colonIdx);
+      const fundKey = composite.slice(colonIdx + 1);
+      const points = (sparkSavings ?? [])
+        .filter((s) => {
+          const fk = s.fund_number ?? s.product_name;
+          return fk === fundKey && sparkReportToProfile.get(s.report_id) === profileId;
+        })
+        .map((s) => ({
+          date: sparkReportDateById.get(s.report_id) ?? "",
+          balance: Number(s.balance ?? 0),
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((p) => p.balance);
+      historyByFundKey.set(composite, points);
+    }
+  }
+
   // Funds with member chips
   const memberById = new Map(members.map((m) => [m.id, m]));
   const fundsWithMember = (savings ?? []).map((fund) => {
     const profileId = reportToProfile.get(fund.report_id);
     const member = profileId ? memberById.get(profileId) ?? null : null;
+    const fundKey = fund.fund_number ?? fund.product_name;
+    const history = profileId && fundKey
+      ? historyByFundKey.get(`${profileId}:${fundKey}`)
+      : undefined;
     return {
       id: fund.id,
       provider: fund.provider,
@@ -356,6 +417,7 @@ async function CombinedDashboard({
       balance: fund.balance,
       monthly_return_pct: fund.monthly_return_pct,
       member,
+      history,
     };
   });
 
