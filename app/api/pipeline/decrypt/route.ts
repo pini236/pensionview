@@ -4,6 +4,7 @@ import { decrypt } from "@/lib/crypto";
 import { triggerNextStep, failQueue } from "@/lib/pipeline/queue";
 import { decryptPdf } from "@/lib/pipeline/decrypt-pdf";
 import { assertInternalRequest } from "@/lib/auth-internal";
+import { logEvent } from "@/lib/observability";
 
 export async function POST(request: NextRequest) {
   const unauth = assertInternalRequest(request);
@@ -12,6 +13,8 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const reportId = searchParams.get("reportId")!;
   const pageCount = Number(searchParams.get("pageCount") || 10);
+
+  const startedAt = Date.now();
 
   try {
     const admin = createAdminClient();
@@ -85,8 +88,25 @@ export async function POST(request: NextRequest) {
       .eq("id", reportId);
 
     await triggerNextStep(reportId, "decrypt", pageCount);
+
+    logEvent("pipeline.step.complete", {
+      feature: "pipeline",
+      step: "decrypt",
+      reportId,
+      durationMs: Date.now() - startedAt,
+      pageCount,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
+    logEvent("pipeline.step.failed", {
+      feature: "pipeline",
+      step: "decrypt",
+      reportId,
+      durationMs: Date.now() - startedAt,
+      pageCount,
+      error,
+    });
     await failQueue(reportId, "decrypt", String(error));
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { extractPage } from "@/lib/pipeline/extract";
 import { triggerNextStep, failQueue } from "@/lib/pipeline/queue";
 import { assertInternalRequest } from "@/lib/auth-internal";
+import { logEvent } from "@/lib/observability";
 
 export async function POST(request: NextRequest) {
   const unauth = assertInternalRequest(request);
@@ -13,6 +14,8 @@ export async function POST(request: NextRequest) {
   const pageCount = Number(searchParams.get("pageCount") || 10);
   const page = Number(searchParams.get("page") || 1);
   const step = `extract_page_${page}`;
+
+  const startedAt = Date.now();
 
   try {
     const admin = createAdminClient();
@@ -45,8 +48,27 @@ export async function POST(request: NextRequest) {
     );
 
     await triggerNextStep(reportId, step, pageCount);
+
+    logEvent("pipeline.step.complete", {
+      feature: "pipeline",
+      step,
+      reportId,
+      durationMs: Date.now() - startedAt,
+      page,
+      pageCount,
+    });
+
     return NextResponse.json({ ok: true, page, pageData });
   } catch (error) {
+    logEvent("pipeline.step.failed", {
+      feature: "pipeline",
+      step,
+      reportId,
+      durationMs: Date.now() - startedAt,
+      page,
+      pageCount,
+      error,
+    });
     await failQueue(reportId, step, String(error));
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }

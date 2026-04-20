@@ -21,8 +21,40 @@ interface ExtractedPage {
 export async function validateAndStore(reportId: string, pages: ExtractedPage[]) {
   const admin = createAdminClient();
 
-  // Merge summary fields across all pages — different pages contribute different fields,
-  // so we keep the first non-null value for each field instead of overwriting.
+  // ---------------------------------------------------------------------------
+  // 1. Idempotency: clear any prior child rows for this report.
+  //
+  // validate may run more than once for a given report — the queue retries
+  // on transient failures, and Vercel can re-invoke a function after a
+  // timeout that already produced rows. Without this delete-first pass we
+  // duplicate every fund and coverage on retry.
+  //
+  // Order matters: insurance_coverages reference insurance_products via FK,
+  // so we drop coverages first. report_summary uses an upsert below
+  // (onConflict=report_id) so it is already idempotent without a delete.
+  // ---------------------------------------------------------------------------
+  const { data: existingInsurance } = await admin
+    .from("insurance_products")
+    .select("id")
+    .eq("report_id", reportId);
+
+  const insuranceIds = existingInsurance?.map((r) => r.id) ?? [];
+  if (insuranceIds.length > 0) {
+    await admin
+      .from("insurance_coverages")
+      .delete()
+      .in("insurance_product_id", insuranceIds);
+  }
+
+  await admin.from("insurance_products").delete().eq("report_id", reportId);
+  await admin.from("savings_products").delete().eq("report_id", reportId);
+
+  // ---------------------------------------------------------------------------
+  // 2. Merge summary fields across all pages.
+  //
+  // Different pages contribute different summary fields, so we keep the
+  // first non-null value for each field instead of overwriting.
+  // ---------------------------------------------------------------------------
   const mergedSummary: Record<string, unknown> = {};
   for (const page of pages) {
     if (!page.summary) continue;
