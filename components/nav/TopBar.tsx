@@ -3,12 +3,14 @@
 import { motion } from "motion/react";
 import { MemberSwitcher } from "@/components/members/MemberSwitcher";
 import type { Member } from "@/lib/types";
+import type { InitialActive } from "@/lib/hooks/use-active-member";
 
 interface TopBarProps {
   members: Member[];
+  initialActive?: InitialActive;
 }
 
-export function TopBar({ members }: TopBarProps) {
+export function TopBar({ members, initialActive }: TopBarProps) {
   return (
     <motion.header
       initial={{ y: -56, opacity: 0 }}
@@ -18,7 +20,7 @@ export function TopBar({ members }: TopBarProps) {
     >
       <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <MemberSwitcher members={members} variant="compact" />
+          <MemberSwitcher members={members} variant="compact" initialActive={initialActive} />
         </div>
       </div>
     </motion.header>

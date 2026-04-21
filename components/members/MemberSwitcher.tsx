@@ -8,12 +8,18 @@ import { Check, ChevronDown, Plus, Settings, Users } from "lucide-react";
 import { clsx } from "clsx";
 import { MemberAvatar } from "./MemberAvatar";
 import { MemberFormModal } from "./MemberFormModal";
-import { useActiveMember } from "@/lib/hooks/use-active-member";
+import { useActiveMember, type InitialActive } from "@/lib/hooks/use-active-member";
 import type { Member } from "@/lib/types";
 
 interface MemberSwitcherProps {
   members: Member[];
   variant?: "compact" | "full";
+  /**
+   * Server-resolved active member passed down from the layout so the picker
+   * starts in sync with what the server rendered — no hydration mismatch, no
+   * flash to is_self after navigation that strips ?member= from the URL.
+   */
+  initialActive?: InitialActive;
 }
 
 /**
@@ -27,14 +33,14 @@ interface MemberSwitcherProps {
  * The dropdown lists "All household" + each member + an "Add member" CTA + a
  * "Manage" link to settings.
  */
-export function MemberSwitcher({ members, variant = "compact" }: MemberSwitcherProps) {
+export function MemberSwitcher({ members, variant = "compact", initialActive }: MemberSwitcherProps) {
   const t = useTranslations("household");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const { activeMemberId, setActive } = useActiveMember(members);
+  const { activeMemberId, setActive } = useActiveMember(members, initialActive);
 
   // Click-outside / Esc to close
   useEffect(() => {
