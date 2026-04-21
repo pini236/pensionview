@@ -3,8 +3,30 @@ import { gmail_v1 } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthedOAuth2Client } from "@/lib/google-auth";
 
+// Production trigger sender — Surense's no-reply address.
 const SENDER_EMAIL = "no-reply@surense.com";
 const SUBJECT_PATTERN = "דוח מצב ביטוח ופנסיה";
+
+// Optional comma-separated list of additional senders that may trigger the
+// import flow. Used for end-to-end testing without spoofing: forward a real
+// Surense email to yourself, set this env var to your own address, and the
+// webhook treats the forwarded message the same as the original.
+//
+// TODO(multi-agency): when we onboard a second insurance provider, replace
+// this env-driven test hook with a per-household trigger registry that pairs
+// each sender with its own URL pattern + download contract + body parser.
+// Until then, only forwarded Surense emails work — the body parsing below
+// still hardcodes Surense's URL and greeting format.
+const ADDITIONAL_SENDERS = (process.env.GMAIL_TRIGGER_TEST_SENDERS ?? "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+function isTriggerSender(from: string): boolean {
+  const lower = from.toLowerCase();
+  if (lower.includes(SENDER_EMAIL)) return true;
+  return ADDITIONAL_SENDERS.some((s) => lower.includes(s));
+}
 
 export async function setupGmailWatch(profileId: string) {
   const admin = createAdminClient();
@@ -105,7 +127,7 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const from = headers.find((h) => h.name === "From")?.value || "";
     const subject = headers.find((h) => h.name === "Subject")?.value || "";
 
-    if (!from.includes(SENDER_EMAIL) || !subject.includes(SUBJECT_PATTERN)) continue;
+    if (!isTriggerSender(from) || !subject.includes(SUBJECT_PATTERN)) continue;
 
     const body = extractBody(full.data.payload);
     const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0];
