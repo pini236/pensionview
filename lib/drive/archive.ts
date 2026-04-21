@@ -25,6 +25,7 @@ export async function resolveFolder(opts: {
 
   const listResp = await drive.files.list({
     q: `name='${safeName}' and '${safeParent}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`,
+    spaces: "drive",
     fields: "files(id,name)",
     pageSize: 1,
   });

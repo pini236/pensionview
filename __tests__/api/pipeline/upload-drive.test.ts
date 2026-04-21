@@ -33,7 +33,13 @@ vi.mock("googleapis", () => ({
 }));
 
 // Supabase admin client mock — chainable builder + storage download
-const reportRow = {
+const reportRow: {
+  id: string;
+  report_date: string;
+  decrypted_pdf_url: string;
+  drive_file_id?: string;
+  profile: { id: string; name: string; household_id: string; is_self: boolean };
+} = {
   id: "report-id",
   report_date: "2026-04-21",
   decrypted_pdf_url: "decrypted/path.pdf",
@@ -257,5 +263,30 @@ describe("upload-drive route", () => {
     expect(res.status).toBe(500);
     expect(failQueue).toHaveBeenCalledWith("report-id", "upload_drive", expect.stringContaining("Drive 503"));
     expect(triggerNextStep).not.toHaveBeenCalled();
+  });
+
+  it("skips and advances when report already has a drive_file_id (retry safety)", async () => {
+    // Default reportRow has no drive_file_id; mutate it for this test only.
+    reportRow.drive_file_id = "existing-file-id";
+    selfProfileRow = {
+      id: "self-id",
+      google_access_token: "enc-self-access",
+      google_refresh_token: null,
+      google_drive_folder_id: "cached-root-id",
+    };
+
+    try {
+      const res = await POST(makeRequest());
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.skipped).toMatch(/already archived/i);
+      expect(driveFilesList).not.toHaveBeenCalled();
+      expect(driveFilesCreate).not.toHaveBeenCalled();
+      expect(triggerNextStep).toHaveBeenCalledWith("report-id", "upload_drive", 10);
+      expect(failQueue).not.toHaveBeenCalled();
+    } finally {
+      delete reportRow.drive_file_id;
+    }
   });
 });

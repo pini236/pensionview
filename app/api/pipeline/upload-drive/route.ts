@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
     const ownerProfile = report.profile;
     if (!ownerProfile) throw new Error("Report has no owner profile");
 
+    // Idempotency: if this step already succeeded on a prior attempt (e.g. the
+    // post-upload DB write or triggerNextStep failed and the queue retried),
+    // don't re-upload — that would create a duplicate file in the user's Drive.
+    if (report.drive_file_id) {
+      await triggerNextStep(reportId, "upload_drive", pageCount);
+      return NextResponse.json({ ok: true, skipped: "already archived" });
+    }
+
     // Always use the SELF profile's Google credentials, regardless of which
     // household member owns the report. Family member profiles never have
     // tokens of their own.

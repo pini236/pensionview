@@ -52,6 +52,7 @@ describe("resolveFolder", () => {
     expect(listArgs.q).toContain("'root' in parents");
     expect(listArgs.q).toContain("mimeType='application/vnd.google-apps.folder'");
     expect(listArgs.q).toContain("trashed=false");
+    expect(listArgs.spaces).toBe("drive");
   });
 
   it("creates a new folder under the parent when none exists", async () => {
