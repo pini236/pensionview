@@ -108,6 +108,10 @@ async function cleanupStorage(
   const datePrefix = `${profileId}/${reportDate}`;
   const extractionsPrefix = `${profileId}/extractions/${reportId}`;
 
+  // Hard limits keep the response time bounded. A pension report at normal scale
+  // has 1 PDF in the date prefix and ~10–30 page JSONs in extractions; 100/200
+  // is comfortable headroom. If a report ever exceeds these, the leftover
+  // objects become orphans — recoverable but worth tracking if it happens.
   const [dateList, extractionsList] = await Promise.all([
     admin.storage.from("reports").list(datePrefix, { limit: 100 }),
     admin.storage.from("reports").list(extractionsPrefix, { limit: 200 }),
@@ -164,6 +168,15 @@ export async function DELETE(
 
   // 1. Drive (best-effort, never throws)
   const driveResult = await deleteDriveFile(report.drive_file_id, report.profile);
+
+  if (driveResult.kind === "failed") {
+    logEvent("report.drive_delete_failed", {
+      feature: "reports",
+      step: "drive_delete",
+      reportId: report.id,
+      error: driveResult.error,
+    });
+  }
 
   // 2. Storage (best-effort)
   await cleanupStorage(admin, report.profile_id, report.report_date, report.id);
