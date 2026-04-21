@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { getActiveMember } from "@/lib/active-member";
 import { formatCurrency } from "@/lib/format";
 import type { Member } from "@/lib/types";
 import { ReportRowActions } from "@/components/reports/ReportRowActions";
+import { ReportProcessingRow } from "@/components/reports/ReportProcessingRow";
 
 export async function generateMetadata({
   searchParams,
@@ -30,28 +31,53 @@ export default async function ReportsPage({
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const sp = await searchParams;
   const active = await getActiveMember(sp);
+  const tProcessing = await getTranslations({
+    locale,
+    namespace: "reports.processing",
+  });
 
   if (active.householdMemberIds.length === 0) {
     return <div className="text-text-muted">Profile not found</div>;
   }
 
-  // Fetch all reports across the active member ids in one query
+  // Fetch reports across the active member ids in one query. We pull
+  // `processing` and `failed` rows alongside `done` so the in-flight pipeline
+  // shows up in the list — the WDK orchestrator writes status / current_step
+  // / current_step_detail as the run progresses, and ReportProcessingRow
+  // polls /api/reports/[id] to reflect updates without a full reload.
   const { data: reports } = await supabase
     .from("reports")
-    .select("id, profile_id, report_date, report_summary(total_savings)")
+    .select(
+      "id, profile_id, report_date, status, current_step, current_step_detail, created_at, report_summary(total_savings)"
+    )
     .in("profile_id", active.householdMemberIds)
-    .eq("status", "done")
-    .order("report_date", { ascending: false });
+    .in("status", ["done", "processing", "failed"])
+    .order("created_at", { ascending: false });
 
-  // Group by year
-  const grouped = (reports || []).reduce(
+  // Split in-flight (processing/failed) from completed reports. In-flight
+  // rows render in their own section above the year-grouped completed list
+  // so the user always sees fresh activity at the top.
+  const allReports = reports ?? [];
+  const inFlight = allReports.filter(
+    (r) => r.status === "processing" || r.status === "failed"
+  );
+  const doneReports = allReports
+    .filter((r) => r.status === "done")
+    // Year grouping below sorts by report_date, not created_at, so resort.
+    .sort(
+      (a, b) =>
+        new Date(b.report_date).getTime() - new Date(a.report_date).getTime()
+    );
+
+  // Group completed reports by year
+  const grouped = doneReports.reduce(
     (acc, report) => {
       const year = new Date(report.report_date).getFullYear();
       if (!acc[year]) acc[year] = [];
       acc[year].push(report);
       return acc;
     },
-    {} as Record<number, NonNullable<typeof reports>>
+    {} as Record<number, typeof doneReports>
   );
 
   const years = Object.keys(grouped).map(Number).sort((a, b) => b - a);
@@ -76,7 +102,32 @@ export default async function ReportsPage({
         </p>
       )}
 
-      {years.length === 0 && (
+      {inFlight.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-text-muted">
+            {tProcessing("title")}
+          </h2>
+          <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
+            {inFlight.map((report) => (
+              <ReportProcessingRow
+                key={report.id}
+                report={{
+                  id: report.id,
+                  status: report.status,
+                  current_step: report.current_step ?? null,
+                  current_step_detail:
+                    (report.current_step_detail as Record<string, unknown> | null) ??
+                    null,
+                  report_date: report.report_date,
+                  created_at: report.created_at,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {years.length === 0 && inFlight.length === 0 && (
         <p className="text-text-muted">
           {locale === "he" ? "אין דוחות עדיין" : "No reports yet"}
         </p>
