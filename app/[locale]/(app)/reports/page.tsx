@@ -8,6 +8,8 @@ import { formatCurrency } from "@/lib/format";
 import type { Member } from "@/lib/types";
 import { ReportRowActions } from "@/components/reports/ReportRowActions";
 import { ReportProcessingRow } from "@/components/reports/ReportProcessingRow";
+import { ProcessingReportsProvider } from "@/components/reports/ProcessingReportsProvider";
+import type { ProcessingReportStatus } from "@/app/api/reports/processing/route";
 
 export async function generateMetadata({
   searchParams,
@@ -107,23 +109,37 @@ export default async function ReportsPage({
           <h2 className="mb-3 text-sm font-medium text-text-muted">
             {tProcessing("title")}
           </h2>
-          <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
-            {inFlight.map((report) => (
-              <ReportProcessingRow
-                key={report.id}
-                report={{
-                  id: report.id,
-                  status: report.status,
-                  current_step: report.current_step ?? null,
-                  current_step_detail:
-                    (report.current_step_detail as Record<string, unknown> | null) ??
-                    null,
-                  report_date: report.report_date,
-                  created_at: report.created_at,
-                }}
-              />
-            ))}
-          </div>
+          <ProcessingReportsProvider
+            initialReports={inFlight.map(
+              (r): ProcessingReportStatus => ({
+                id: r.id,
+                status: r.status,
+                current_step: r.current_step ?? null,
+                current_step_detail:
+                  (r.current_step_detail as Record<string, unknown> | null) ??
+                  null,
+                report_date: r.report_date,
+              })
+            )}
+          >
+            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
+              {inFlight.map((report) => (
+                <ReportProcessingRow
+                  key={report.id}
+                  report={{
+                    id: report.id,
+                    status: report.status,
+                    current_step: report.current_step ?? null,
+                    current_step_detail:
+                      (report.current_step_detail as Record<string, unknown> | null) ??
+                      null,
+                    report_date: report.report_date,
+                    created_at: report.created_at,
+                  }}
+                />
+              ))}
+            </div>
+          </ProcessingReportsProvider>
         </section>
       )}
 

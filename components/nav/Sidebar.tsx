@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Home, TrendingUp, FileText, Settings } from "lucide-react";
 import { MemberSwitcher } from "@/components/members/MemberSwitcher";
 import type { Member } from "@/lib/types";
+import type { InitialActive } from "@/lib/hooks/use-active-member";
 
 const tabs = [
   { key: "home", href: "/dashboard", icon: Home },
@@ -17,9 +18,10 @@ const tabs = [
 
 interface SidebarProps {
   members: Member[];
+  initialActive?: InitialActive;
 }
 
-export function Sidebar({ members }: SidebarProps) {
+export function Sidebar({ members, initialActive }: SidebarProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const locale = useLocale();
@@ -35,7 +37,7 @@ export function Sidebar({ members }: SidebarProps) {
         <h1 className="px-2 text-base font-semibold text-text-primary mb-3">
           PensionView
         </h1>
-        <MemberSwitcher members={members} variant="full" />
+        <MemberSwitcher members={members} variant="full" initialActive={initialActive} />
       </motion.div>
       <nav className="flex flex-col gap-1 px-3">
         {tabs.map(({ key, href, icon: Icon }) => {

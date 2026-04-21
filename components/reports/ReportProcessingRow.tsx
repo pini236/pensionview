@@ -4,24 +4,19 @@
 // PensionView — Report processing row (in-flight reports)
 //
 // Renders one row in the reports list that represents a report still being
-// processed by the WDK pipeline (or that has failed). For "processing" rows
-// we poll /api/reports/[id] every 3s and refresh the parent server component
-// once the row transitions to "done", so the row re-renders as a normal
-// completed report on the next pass.
+// processed by the WDK pipeline (or that has failed). Polling has been
+// consolidated into ProcessingReportsProvider — this component is now a
+// presentational consumer that reads per-row state via useProcessingReport().
 //
-// Step labels come from i18n (`reports.processing.steps.*`) and `extract_page`
-// is parameterized with the page / total_pages we read from
-// current_step_detail. Failed rows show the failure_reason if the pipeline
-// recorded one (set by lib/workflow/pipeline.ts on the catch path).
+// Retry button logic and its setTimeout cleanup remain local since they are
+// per-row interactions that don't belong in the shared polling context.
 // =============================================================================
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-
-const POLL_INTERVAL_MS = 3000;
+import { useProcessingReport } from "./ProcessingReportsProvider";
 
 type StepKey =
   | "download"
@@ -70,86 +65,32 @@ interface PollState {
 export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
   const t = useTranslations("reports.processing");
   const tSteps = useTranslations("reports.processing.steps");
-  const router = useRouter();
   const locale = useLocale();
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
 
-  // Latest known status — seeded from the server-rendered row, refreshed by
-  // polling. We never start with a "done" row here (the parent only renders
-  // this component for processing/failed reports), but we still treat "done"
-  // as a terminal transition since that's the whole point of polling.
-  const [state, setState] = useState<PollState>({
+  // Read the latest poll state from the shared provider. Fall back to the
+  // server-rendered row props on the first render (before the first tick).
+  const polled = useProcessingReport(report.id);
+  const state: PollState = polled ?? {
     status: report.status,
     current_step: report.current_step,
     current_step_detail: report.current_step_detail,
-  });
+  };
 
+  // Retry state — local only, not part of the shared polling context.
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Refs so the polling effect can read the latest values without resubscribing
-  // every time `state` changes (which would otherwise reset the interval).
-  const stateRef = useRef(state);
+  // Clean up any pending retry timeout on unmount.
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-
-  useEffect(() => {
-    // Failed rows never poll — there is nothing left to learn.
-    if (state.status !== "processing") {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function pollOnce() {
-      try {
-        const res = await fetch(`/api/reports/${report.id}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const body = (await res.json()) as {
-          status: string;
-          current_step: string | null;
-          current_step_detail: Record<string, unknown> | null;
-        };
-        if (cancelled) return;
-
-        const prev = stateRef.current;
-        if (
-          body.status !== prev.status ||
-          body.current_step !== prev.current_step ||
-          JSON.stringify(body.current_step_detail) !==
-            JSON.stringify(prev.current_step_detail)
-        ) {
-          setState({
-            status: body.status,
-            current_step: body.current_step,
-            current_step_detail: body.current_step_detail,
-          });
-        }
-
-        if (body.status === "done") {
-          // Server component will re-render this report as a completed row.
-          router.refresh();
-        }
-      } catch {
-        // Transient network errors are expected on a long-poll loop — swallow
-        // and let the next tick try again.
-      }
-    }
-
-    const interval = setInterval(pollOnce, POLL_INTERVAL_MS);
     return () => {
-      cancelled = true;
-      clearInterval(interval);
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
       }
     };
-  }, [report.id, router, state.status]);
+  }, []);
 
   async function handleRetry() {
     setIsRetrying(true);
@@ -163,12 +104,10 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
         setRetryError("Retry failed");
         return;
       }
-      // Optimistic: show "Retrying..." briefly, then let polling pick up the
-      // status change (processing → done/failed). After 1s flip state so the
-      // polling effect re-activates on the updated status.
+      // After 1s clear the optimistic "Retrying..." label; the shared provider
+      // will pick up the status change on the next poll tick.
       retryTimeoutRef.current = setTimeout(() => {
         retryTimeoutRef.current = null;
-        setState((prev) => ({ ...prev, status: "processing" }));
         setIsRetrying(false);
       }, 1000);
     } catch {
@@ -241,7 +180,6 @@ function renderStepLabel(
 ): string {
   const step = state.current_step;
   if (!isStepKey(step)) {
-    // No step recorded yet (workflow hasn't ticked) — generic placeholder.
     return t("polling");
   }
 
@@ -262,7 +200,6 @@ function renderFailureMessage(state: PollState, t: RootTranslator): string {
     typeof detail.failure_reason === "string" ? detail.failure_reason : null;
   if (!reasonRaw) return t("failed_default");
 
-  // Long stack-trace-like reasons are useless in a list row — keep it short.
   const MAX = 120;
   const reason =
     reasonRaw.length > MAX ? `${reasonRaw.slice(0, MAX - 1)}…` : reasonRaw;

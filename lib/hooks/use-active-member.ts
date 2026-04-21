@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { Member } from "@/lib/types";
 
@@ -9,16 +9,32 @@ export type ActiveMemberSelection =
   | { kind: "single"; member: Member };
 
 /**
+ * Describes the server-resolved active member that the layout passes down so
+ * the client picker starts in sync with the server on first paint.
+ */
+export type InitialActive =
+  | { kind: "all" }
+  | { kind: "single"; memberId: string };
+
+/**
  * Client-side hook that mirrors `getActiveMember()` on the server.
  *
- * Source of truth: URL `?member=<id|all>`. We intentionally don't read the
- * cookie here because the server has already resolved it on first paint —
- * client just needs to react to URL changes the user makes via the switcher.
+ * Source of truth priority:
+ *   1. URL `?member=<id|all>` — user navigated to a URL with the param.
+ *   2. `initialActive` — server-resolved value threaded down from the layout.
+ *      This covers the common case where the user selects a member, navigates
+ *      via bottom-nav (which strips query params), and the server correctly
+ *      read the cookie — but the client would otherwise fall back to is_self.
+ *   3. Fallback to `is_self` — edge case when neither URL nor server context
+ *      has a usable value.
  *
  * `setActive` pushes a new URL with the param set; the server reads it on the
  * next render and writes the cookie back via `getActiveMember`.
  */
-export function useActiveMember(members: Member[]): {
+export function useActiveMember(
+  members: Member[],
+  initialActive?: InitialActive,
+): {
   activeMemberId: string | "all";
   active: ActiveMemberSelection;
   setActive: (id: string | "all") => void;
@@ -33,6 +49,7 @@ export function useActiveMember(members: Member[]): {
     activeMemberId: string | "all";
     active: ActiveMemberSelection;
   }>(() => {
+    // 1. URL param wins — explicit navigation.
     if (param === "all") {
       return { activeMemberId: "all", active: { kind: "all" } };
     }
@@ -42,7 +59,20 @@ export function useActiveMember(members: Member[]): {
         return { activeMemberId: match.id, active: { kind: "single", member: match } };
       }
     }
-    // Fallback: self if present, else first member, else "all"
+
+    // 2. Server-resolved initial value — covers post-navigation renders where
+    //    the URL param was stripped but the server correctly read the cookie.
+    if (initialActive) {
+      if (initialActive.kind === "all") {
+        return { activeMemberId: "all", active: { kind: "all" } };
+      }
+      const match = members.find((m) => m.id === initialActive.memberId);
+      if (match) {
+        return { activeMemberId: match.id, active: { kind: "single", member: match } };
+      }
+    }
+
+    // 3. Fallback: self if present, else first member, else "all".
     const self = members.find((m) => m.is_self) ?? members[0];
     if (self) {
       return {
@@ -51,12 +81,12 @@ export function useActiveMember(members: Member[]): {
       };
     }
     return { activeMemberId: "all", active: { kind: "all" } };
-  }, [param, members]);
+  }, [param, members, initialActive]);
 
   const setActive = useCallback(
     (id: string | "all") => {
-      // Persist to cookie so navigation between tabs (which drops query params)
-      // still respects the user's selection. Server reads URL > cookie > self.
+      // Persist to cookie so the server reads the right member on the next
+      // navigation. Server reads URL > cookie > self.
       if (typeof document !== "undefined") {
         document.cookie = `pv_active_member=${id}; path=/; samesite=lax; max-age=31536000`;
       }
