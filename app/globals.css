@@ -10,6 +10,7 @@
   --color-text-muted: #94A3B8;
   --color-gain: #22C55E;
   --color-loss: #F59E0B;
+  --color-danger: #EF4444;
   --color-cta: #22C55E;
   --color-fund-pension: #3B82F6;
   --color-fund-education: #A78BFA;
@@ -27,6 +28,7 @@
   /* Deeper accents for AA contrast on light surfaces */
   --color-gain: #16A34A;
   --color-loss: #D97706;
+  --color-danger: #DC2626;
   --color-cta: #16A34A;
   /* Fund colors stay the same — they're accents */
 }
