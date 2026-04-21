@@ -1,8 +1,7 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decrypt } from "@/lib/crypto";
 import { FatalError } from "workflow";
-import { getGoogleOAuth2Client } from "@/lib/google-auth";
+import { getAuthedOAuth2Client } from "@/lib/google-auth";
 import { uploadPdfToFolder } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -47,7 +46,7 @@ export async function uploadDriveStep({
 
   const { data: selfProfile } = await admin
     .from("profiles")
-    .select("google_access_token, google_refresh_token")
+    .select("id, google_access_token, google_refresh_token, google_token_expiry")
     .eq("household_id", ownerProfile.household_id as string)
     .eq("is_self", true)
     .is("deleted_at", null)
@@ -57,13 +56,16 @@ export async function uploadDriveStep({
     throw new FatalError("Self profile lost Google token between resolve and upload steps");
   }
 
-  const oauth2Client = getGoogleOAuth2Client();
-  oauth2Client.setCredentials({
-    access_token: decrypt(selfProfile.google_access_token as string, key),
-    refresh_token: selfProfile.google_refresh_token
-      ? decrypt(selfProfile.google_refresh_token as string, key)
-      : undefined,
-  });
+  const oauth2Client = getAuthedOAuth2Client(
+    {
+      id: selfProfile.id as string,
+      google_access_token: selfProfile.google_access_token as string,
+      google_refresh_token: (selfProfile.google_refresh_token as string | null) ?? null,
+      google_token_expiry: (selfProfile.google_token_expiry as string | null) ?? null,
+    },
+    admin,
+    key
+  );
 
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
@@ -79,3 +81,6 @@ export async function uploadDriveStep({
 
   return { driveFileId };
 }
+
+// Google Drive upload — transient network/rate-limit failures are common.
+uploadDriveStep.maxRetries = 4;

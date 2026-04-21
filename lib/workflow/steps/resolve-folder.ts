@@ -1,8 +1,7 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decrypt } from "@/lib/crypto";
 import { FatalError } from "workflow";
-import { getGoogleOAuth2Client } from "@/lib/google-auth";
+import { getAuthedOAuth2Client } from "@/lib/google-auth";
 import { resolveFolder, profileFolderName } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -47,13 +46,16 @@ export async function resolveDriveFoldersStep({
     return { skipped: true, reason: "no Google token on self profile" };
   }
 
-  const oauth2Client = getGoogleOAuth2Client();
-  oauth2Client.setCredentials({
-    access_token: decrypt(selfProfile.google_access_token as string, key),
-    refresh_token: selfProfile.google_refresh_token
-      ? decrypt(selfProfile.google_refresh_token as string, key)
-      : undefined,
-  });
+  const oauth2Client = getAuthedOAuth2Client(
+    {
+      id: selfProfile.id as string,
+      google_access_token: selfProfile.google_access_token as string,
+      google_refresh_token: (selfProfile.google_refresh_token as string | null) ?? null,
+      google_token_expiry: (selfProfile.google_token_expiry as string | null) ?? null,
+    },
+    admin,
+    key
+  );
 
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
@@ -81,3 +83,6 @@ export async function resolveDriveFoldersStep({
 
   return { subfolderId, selfProfileId: selfProfile.id as string };
 }
+
+// Google Drive list-then-create is mostly idempotent — default 3 attempts.
+resolveDriveFoldersStep.maxRetries = 2;
