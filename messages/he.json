@@ -50,6 +50,19 @@
       "yearly": "שנתי",
       "threeYear": "36 חוד׳",
       "fiveYear": "60 חוד׳"
+    },
+    "delete": {
+      "trigger": "מחק דוח",
+      "title": "למחוק את הדוח הזה?",
+      "body": "הפעולה תסיר לצמיתות את הדוח ואת כל הנתונים שחולצו ממנו. לא ניתן לבטל פעולה זו.",
+      "cancel": "ביטול",
+      "confirm": "מחק",
+      "submitting": "מוחק...",
+      "successTitle": "הדוח נמחק",
+      "driveFailedBody": "לא הצלחנו להסיר את הקובץ מ-Google Drive שלך. ניתן למחוק אותו ידנית:",
+      "openInDrive": "פתח ב-Drive",
+      "done": "סיום",
+      "errorGeneric": "לא ניתן היה למחוק את הדוח. נסה שוב."
     }
   },
   "common": {

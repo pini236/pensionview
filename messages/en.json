@@ -50,6 +50,19 @@
       "yearly": "Yearly",
       "threeYear": "36mo",
       "fiveYear": "60mo"
+    },
+    "delete": {
+      "trigger": "Delete report",
+      "title": "Delete this report?",
+      "body": "This permanently removes the report and all extracted data. This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "submitting": "Deleting...",
+      "successTitle": "Report deleted",
+      "driveFailedBody": "We couldn't remove the file from your Google Drive. You can delete it manually:",
+      "openInDrive": "Open in Drive",
+      "done": "Done",
+      "errorGeneric": "Could not delete report. Please try again."
     }
   },
   "common": {
