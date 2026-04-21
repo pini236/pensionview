@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/renew-watch",
       "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/heal-pipelines",
-      "schedule": "0 7 * * *"
     }
   ]
 }
