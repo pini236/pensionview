@@ -69,6 +69,29 @@ export default async function ReportDetailPage({
     .select("*, coverages:insurance_coverages(*)")
     .eq("report_id", id);
 
+  // Look up the previous report (by date) for the same profile so the hero
+  // can render an inline "+X deposits, +Y market" line. When this is the
+  // first report for the profile, leave both null and the UI hides the line.
+  const { data: previousReport } = await supabase
+    .from("reports")
+    .select("id, report_date")
+    .eq("profile_id", report.profile_id)
+    .eq("status", "done")
+    .lt("report_date", report.report_date)
+    .order("report_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let previousTotalSavings: number | null = null;
+  if (previousReport) {
+    const { data: prevSummary } = await supabase
+      .from("report_summary")
+      .select("total_savings")
+      .eq("report_id", previousReport.id)
+      .maybeSingle();
+    previousTotalSavings = prevSummary?.total_savings ?? null;
+  }
+
   return (
     <ReportDetail
       reportId={report.id}
@@ -78,6 +101,7 @@ export default async function ReportDetailPage({
       savings={savings || []}
       insurance={insurance || []}
       ownerMember={ownerMember}
+      previousTotalSavings={previousTotalSavings}
     />
   );
 }

@@ -19,7 +19,15 @@
     "disability": "אובדן כושר עבודה",
     "active": "קיים",
     "inactive": "לא קיים",
-    "totalBalance": "יתרה כוללת"
+    "totalBalance": "יתרה כוללת",
+    "cashflow": {
+      "title": "תזרים",
+      "deposits_this_month": "הופקד החודש",
+      "market_this_month": "שינוי שוק החודש",
+      "market_pct": "{value}%",
+      "needs_previous": "דרוש דוח קודם כדי להציג שינויי שוק",
+      "first_report": "דוח ראשון — השוואה מהחודש הבא"
+    }
   },
   "trends": {
     "portfolioGrowth": "צמיחת תיק",
@@ -29,7 +37,16 @@
     "yearly": "שנתי",
     "threeYear": "36 חודשים",
     "fiveYear": "60 חודשים",
-    "depositsBreakdown": "פילוח הפקדות"
+    "depositsBreakdown": "פילוח הפקדות",
+    "cashflow_section": {
+      "title": "הפקדות מול שוק",
+      "aggregate_title": "במהלך {months} חודשים",
+      "aggregate_deposits": "הופקדו {amount}",
+      "aggregate_market": "{amount} משוק ({pct}%)",
+      "range": "מ-{start} עד {end}",
+      "empty": "העלה לפחות 2 דוחות כדי להציג הפקדות מול שוק לאורך זמן",
+      "tooltip": "הפקדה {deposits} + שוק {market} = סה״כ Δ {total}"
+    }
   },
   "reports": {
     "title": "דוחות",
@@ -50,6 +67,9 @@
       "yearly": "שנתי",
       "threeYear": "36 חוד׳",
       "fiveYear": "60 חוד׳"
+    },
+    "detail": {
+      "deposits_market_inline": "+{deposits} הפקדות, {market_sign}{market} שוק"
     },
     "delete": {
       "trigger": "מחק דוח",
