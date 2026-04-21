@@ -139,7 +139,8 @@ export async function GET() {
 
       const body = firstBody(full.data.payload);
       const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0] ?? null;
-      const recipientMatch = body?.match(/(\S+)\s+שלום/);
+      // Mirror the regex in lib/gmail.ts so the diagnostic stays accurate.
+      const recipientMatch = body?.match(/^(.+?)[,.\s]+שלום/m);
       const rawRecipientName = recipientMatch?.[1] ?? null;
       const cleanRecipientName = rawRecipientName
         ? sanitizeIlikeTerm(rawRecipientName)

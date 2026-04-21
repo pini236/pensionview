@@ -131,7 +131,13 @@ export async function processGmailNotification(historyId: string, profileEmail: 
 
     const body = extractBody(full.data.payload);
     const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0];
-    const recipientMatch = body?.match(/(\S+)\s+שלום/);
+    // Capture the FULL name on the greeting line, not just the last word.
+    // Surense's greeting is on its own line in the format "{first} {last} שלום"
+    // (sometimes with a trailing comma). The original `(\S+)\s+שלום` regex
+    // matched only the last token (= surname), which then matched multiple
+    // household members via ilike and silently dropped the import — the
+    // single() call returns no row when there are 2+ matches.
+    const recipientMatch = body?.match(/^(.+?)[,.\s]+שלום/m);
     const rawRecipientName = recipientMatch?.[1];
 
     if (!surenseLink || !rawRecipientName) continue;
