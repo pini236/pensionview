@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decrypt } from "@/lib/crypto";
 import { FatalError } from "workflow";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -12,7 +11,7 @@ export async function downloadStep({ reportId }: { reportId: string }): Promise<
 
   const { data: report } = await admin
     .from("reports")
-    .select("*, profile:profiles(*)")
+    .select("id, profile_id, raw_pdf_url")
     .eq("id", reportId)
     .single();
 
@@ -28,16 +27,12 @@ export async function downloadStep({ reportId }: { reportId: string }): Promise<
   const downloadUrl = report.raw_pdf_url;
   if (!downloadUrl) throw new FatalError("No download URL on report");
 
-  const profile = report.profile as { national_id: string } | null;
-  if (!profile?.national_id) throw new FatalError("Profile has no national_id");
-
-  const nationalId = decrypt(profile.national_id, process.env.ENCRYPTION_KEY!);
-
-  const pdfResponse = await fetch(downloadUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: nationalId }),
-  });
+  // The URL Surense issues for inbound report links is a pre-signed access
+  // URL (?sig=…&exp=…). Pre-signed URLs are GET-only — POSTing returns 405
+  // Method Not Allowed. national_id is NOT needed for HTTP access (the
+  // signature in the URL authenticates the request); it only encrypts the
+  // PDF itself, which decryptStep handles next.
+  const pdfResponse = await fetch(downloadUrl, { method: "GET" });
 
   if (!pdfResponse.ok) {
     throw new Error(`Surense API returned ${pdfResponse.status}`);
