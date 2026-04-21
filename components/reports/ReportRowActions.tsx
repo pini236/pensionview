@@ -8,7 +8,7 @@ import { DeleteReportDialog } from "./DeleteReportDialog";
 
 interface ReportRowActionsProps {
   reportId: string;
-  reportDate: string;
+  reportDate: string | null;
   totalSavings: number;
   ownerName?: string | null;
 }

@@ -49,7 +49,7 @@ export interface ProcessingReportStatus {
   status: string;
   current_step: string | null;
   current_step_detail: Record<string, unknown> | null;
-  report_date: string;
+  report_date: string | null;
 }
 
 interface ProcessingReportsResponse {
@@ -89,7 +89,7 @@ export async function GET() {
     current_step: (row.current_step as string | null) ?? null,
     current_step_detail:
       (row.current_step_detail as Record<string, unknown> | null) ?? null,
-    report_date: row.report_date as string,
+    report_date: (row.report_date as string | null) ?? null,
   }));
 
   const body: ProcessingReportsResponse = { reports };

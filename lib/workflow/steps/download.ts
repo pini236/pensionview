@@ -45,7 +45,9 @@ export async function downloadStep({ reportId }: { reportId: string }): Promise<
 
   const pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
 
-  const storagePath = `reports/${report.profile_id}/${report.report_date}/encrypted.pdf`;
+  // reportId-keyed path: report_date may be null until the validate step
+  // extracts it from the PDF, so we can't rely on it for storage layout.
+  const storagePath = `reports/${report.profile_id}/${reportId}/encrypted.pdf`;
   await admin.storage.from("reports").upload(storagePath, pdfBuffer, {
     contentType: "application/pdf",
     upsert: true,

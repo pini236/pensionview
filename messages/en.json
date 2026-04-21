@@ -84,6 +84,18 @@
       "done": "Done",
       "errorGeneric": "Could not delete report. Please try again."
     },
+    "editDate": {
+      "trigger": "Edit report date",
+      "title": "Edit report date",
+      "body": "Pick the date that the report covers. Use this when the date couldn't be detected automatically, or when it's wrong.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "submitting": "Saving...",
+      "error_required": "Please pick a date.",
+      "error_duplicate": "Another report already exists for that date.",
+      "error_generic": "Could not update the date. Please try again."
+    },
     "upload": {
       "button": "Upload report",
       "modal_title": "Upload reports",
@@ -103,6 +115,7 @@
     "processing": {
       "title": "Processing",
       "failed_title": "Failed",
+      "date_pending": "Date pending",
       "polling": "Working...",
       "failed_default": "Processing failed.",
       "failed_with_reason": "Processing failed: {reason}",

@@ -70,10 +70,14 @@ export async function uploadDriveStep({
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
   const buffer = Buffer.from(await pdfData.arrayBuffer());
+  // Prefer the (now post-validate) extracted report_date; fall back to the
+  // reportId so we never produce `PensionView-null.pdf` if extraction also
+  // didn't surface a date.
+  const filenameSuffix = report.report_date ?? reportId;
   const driveFileId = await uploadPdfToFolder({
     drive,
     parentFolderId: subfolderId,
-    filename: `PensionView-${report.report_date}.pdf`,
+    filename: `PensionView-${filenameSuffix}.pdf`,
     buffer,
   });
 

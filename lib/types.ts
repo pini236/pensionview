@@ -123,7 +123,13 @@ export interface Member {
 export interface Report {
   id: string;
   profile_id: string;
-  report_date: string;
+  /**
+   * Report period (YYYY-MM-DD). Null while the workflow's validate step
+   * hasn't yet extracted the date from the PDF cover page — happens when
+   * a backfill upload's filename had no MM-YYYY pattern and the user
+   * didn't set a date manually.
+   */
+  report_date: string | null;
   status: ReportStatus;
   raw_pdf_url: string | null;
   decrypted_pdf_url: string | null;

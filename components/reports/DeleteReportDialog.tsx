@@ -11,7 +11,7 @@ type Phase = "confirm" | "drive_failed" | "submitting";
 
 interface DeleteReportDialogProps {
   reportId: string;
-  reportDate: string;
+  reportDate: string | null;
   totalSavings: number;
   ownerName?: string | null;
   onClose: () => void;
@@ -54,10 +54,12 @@ export function DeleteReportDialog({
     };
   }, []);
 
-  const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, {
-    month: "long",
-    year: "numeric",
-  });
+  const dateLabel = reportDate
+    ? new Date(reportDate).toLocaleDateString(fullLocale, {
+        month: "long",
+        year: "numeric",
+      })
+    : t("date_pending");
 
   async function handleConfirm() {
     setError(null);

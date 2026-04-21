@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DeleteReportDialog } from "@/components/reports/DeleteReportDialog";
+import { EditReportDateDialog } from "@/components/reports/EditReportDateDialog";
 import type { Member, SavingsProduct, InsuranceProduct, InsuranceCoverage, ReportSummary } from "@/lib/types";
 
 type Tab = "balances" | "returns" | "deposits" | "insurance";
@@ -18,7 +19,7 @@ interface InsuranceWithCoverages extends InsuranceProduct {
 
 interface ReportDetailProps {
   reportId: string;
-  reportDate: string;
+  reportDate: string | null;
   locale: string;
   summary: ReportSummary | null;
   savings: SavingsProduct[];
@@ -46,9 +47,12 @@ export function ReportDetail({
   const [tab, setTab] = useState<Tab>("balances");
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editDateOpen, setEditDateOpen] = useState(false);
   const t = useTranslations("reports");
 
-  const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, { month: "long", year: "numeric" });
+  const dateLabel = reportDate
+    ? new Date(reportDate).toLocaleDateString(fullLocale, { month: "long", year: "numeric" })
+    : t("processing.date_pending");
 
   const totalSavings = summary?.total_savings ?? 0;
   const deposits = summary?.monthly_deposits ?? 0;
@@ -76,7 +80,17 @@ export function ReportDetail({
       <div className="rounded-xl bg-surface p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-text-muted">{dateLabel}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm text-text-muted">{dateLabel}</p>
+              <button
+                type="button"
+                onClick={() => setEditDateOpen(true)}
+                aria-label={t("editDate.trigger")}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-text-muted/60 transition-colors hover:bg-surface-hover hover:text-text-primary cursor-pointer"
+              >
+                <Pencil size={12} />
+              </button>
+            </div>
             <p className="mt-1 text-2xl font-medium text-text-primary">
               <bdi>{formatCurrency(totalSavings, fullLocale)}</bdi>
             </p>
@@ -104,6 +118,13 @@ export function ReportDetail({
           ownerName={ownerMember?.name ?? null}
           onClose={() => setDeleteOpen(false)}
           onDeleted={() => router.push(`/${locale}/reports`)}
+        />
+      )}
+      {editDateOpen && (
+        <EditReportDateDialog
+          reportId={reportId}
+          initialDate={reportDate}
+          onClose={() => setEditDateOpen(false)}
         />
       )}
 

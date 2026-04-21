@@ -84,6 +84,18 @@
       "done": "סיום",
       "errorGeneric": "לא ניתן היה למחוק את הדוח. נסה שוב."
     },
+    "editDate": {
+      "trigger": "ערוך תאריך דוח",
+      "title": "עריכת תאריך הדוח",
+      "body": "בחר את התאריך שהדוח מתייחס אליו. השתמש בזה כאשר התאריך לא זוהה אוטומטית, או כשהוא שגוי.",
+      "save": "שמור",
+      "cancel": "ביטול",
+      "close": "סגור",
+      "submitting": "שומר...",
+      "error_required": "נא לבחור תאריך.",
+      "error_duplicate": "כבר קיים דוח אחר באותו תאריך.",
+      "error_generic": "לא הצלחנו לעדכן את התאריך. נסה שוב."
+    },
     "upload": {
       "button": "העלה דוח",
       "modal_title": "העלאת דוחות",
@@ -103,6 +115,7 @@
     "processing": {
       "title": "בעיבוד",
       "failed_title": "נכשל",
+      "date_pending": "תאריך בעיבוד",
       "polling": "מעבד...",
       "failed_default": "העיבוד נכשל.",
       "failed_with_reason": "העיבוד נכשל: {reason}",

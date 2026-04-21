@@ -1,3 +1,4 @@
+import { FatalError } from "workflow";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ProductType, InsuranceType, CoverageType, InsuredRole } from "@/lib/types";
 
@@ -18,8 +19,53 @@ interface ExtractedPage {
   insurance_products?: Array<Record<string, unknown>>;
 }
 
+// Postgres unique-violation SQLSTATE — used to detect a true duplicate when
+// validate populates report_date and another report at the same date already
+// exists for this profile.
+const PG_UNIQUE_VIOLATION = "23505";
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export async function validateAndStore(reportId: string, pages: ExtractedPage[]) {
   const admin = createAdminClient();
+
+  // ---------------------------------------------------------------------------
+  // 0. Backfill the report's date from the PDF cover/letter page when it
+  //    hasn't been set yet (filename had no MM-YYYY and no manual override).
+  //
+  //    Only fills `null` values — we never silently overwrite a date the
+  //    user provided at upload time or set manually via PATCH. To re-derive
+  //    from the PDF, the user can clear the date first and re-run validate.
+  // ---------------------------------------------------------------------------
+  const { data: existingReport } = await admin
+    .from("reports")
+    .select("report_date")
+    .eq("id", reportId)
+    .single();
+
+  if (existingReport && existingReport.report_date == null) {
+    const extractedDate = pages
+      .map((p) => (typeof p.report_date === "string" ? p.report_date : null))
+      .find((d): d is string => d !== null && ISO_DATE_RE.test(d));
+
+    if (extractedDate) {
+      const { error } = await admin
+        .from("reports")
+        .update({ report_date: extractedDate })
+        .eq("id", reportId);
+
+      if (error) {
+        // 23505 = another report already exists at (profile_id, extractedDate).
+        // Surface a fatal, human-readable message so the UI's failed-row
+        // explainer reads "Duplicate of existing report for {date}".
+        if (error.code === PG_UNIQUE_VIOLATION) {
+          throw new FatalError(
+            `Duplicate of existing report for ${extractedDate}`
+          );
+        }
+        throw error;
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // 1. Idempotency: clear any prior child rows for this report.

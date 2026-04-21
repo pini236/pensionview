@@ -25,17 +25,22 @@ export async function runReportPipeline({
 
     const { pageCount } = await decryptStep({ reportId });
 
+    for (let p = 1; p <= pageCount; p++) {
+      await extractPageStep({ reportId, page: p, pageCount });
+    }
+
+    // validate runs before Drive upload so the report_date pulled from the
+    // PDF cover page is available when we name the Drive file. Otherwise
+    // backfill uploads with no date in the filename would archive as
+    // `PensionView-null.pdf`.
+    await validateStep({ reportId, pageCount });
+
     const driveResult = await resolveDriveFoldersStep({ reportId });
 
     if (!("skipped" in driveResult)) {
       await uploadDriveStep({ reportId, subfolderId: driveResult.subfolderId });
     }
 
-    for (let p = 1; p <= pageCount; p++) {
-      await extractPageStep({ reportId, page: p, pageCount });
-    }
-
-    await validateStep({ reportId, pageCount });
     await insightStep({ reportId });
     await finalizeStep({ reportId });
   } catch (error) {

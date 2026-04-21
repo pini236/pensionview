@@ -32,31 +32,33 @@ interface Phase {
 }
 
 // Canonical order of backend step names used to derive phase positions.
-// `download` is intentionally omitted — backfill skips it; Gmail does it invisibly.
+// Mirrors lib/workflow/pipeline.ts — `download` is omitted (backfill skips it,
+// Gmail does it invisibly). Drive upload now runs after validate so its
+// filename can use the report_date extracted from the PDF.
 type BackendStep =
   | "decrypt"
-  | "resolve_drive_folder"
-  | "upload_drive"
   | "extract_page"
   | "validate"
+  | "resolve_drive_folder"
+  | "upload_drive"
   | "generate_insight"
   | "complete";
 
 const STEP_TO_PHASE_INDEX: Record<BackendStep, number> = {
   decrypt: 0,
-  resolve_drive_folder: 1,
-  upload_drive: 1,
-  extract_page: 2,
-  validate: 3,
+  extract_page: 1,
+  validate: 2,
+  resolve_drive_folder: 3,
+  upload_drive: 3,
   generate_insight: 4,
   complete: 5,
 };
 
 const PHASE_DEFS: { id: PhaseId; labelKey: string }[] = [
   { id: "decrypt", labelKey: "phases.decrypt" },
-  { id: "upload_drive", labelKey: "phases.upload_drive" },
   { id: "extract", labelKey: "phases.extract" },
   { id: "validate", labelKey: "phases.validate" },
+  { id: "upload_drive", labelKey: "phases.upload_drive" },
   { id: "insight", labelKey: "phases.insight" },
   { id: "finalize", labelKey: "phases.finalize" },
 ];
@@ -106,7 +108,7 @@ function derivePhases(
 
 interface ReportProgressViewProps {
   reportId: string;
-  reportDate: string;
+  reportDate: string | null;
   ownerMember?: Member | null;
   initialStatus: string;
   initialStep: string | null;
@@ -230,10 +232,12 @@ export function ReportProgressView({
     return page !== null && total !== null ? { page, total } : null;
   })();
 
-  const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, {
-    month: "long",
-    year: "numeric",
-  });
+  const dateLabel = reportDate
+    ? new Date(reportDate).toLocaleDateString(fullLocale, {
+        month: "long",
+        year: "numeric",
+      })
+    : t("date_pending");
 
   return (
     <div className="space-y-4">
