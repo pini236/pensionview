@@ -32,35 +32,39 @@ Return ONLY valid JSON, no markdown fences, no commentary.`;
 
 export async function extractPage(
   pdfBase64: string,
-  pageNumber: number
+  pageNumber: number,
+  idempotencyKey?: string
 ): Promise<Record<string, unknown>> {
   const startTime = Date.now();
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: [
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: pdfBase64,
+  const response = await client.messages.create(
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: [
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: pdfBase64,
+              },
+              cache_control: { type: "ephemeral" },
+            } as any,
+            {
+              type: "text",
+              text: `Extract data ONLY from page ${pageNumber} of this PDF.\n\n${EXTRACTION_PROMPT}`,
             },
-            cache_control: { type: "ephemeral" },
-          } as any,
-          {
-            type: "text",
-            text: `Extract data ONLY from page ${pageNumber} of this PDF.\n\n${EXTRACTION_PROMPT}`,
-          },
-        ],
-      },
-    ],
-  });
+          ],
+        },
+      ],
+    },
+    idempotencyKey ? { idempotencyKey } : undefined
+  );
 
   const latencyMs = Date.now() - startTime;
   const usageAny = response.usage as unknown as Record<string, number>;
