@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import { forwardRef, type ReactNode } from "react";
 
 interface ButtonProps extends HTMLMotionProps<"button"> {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
 }
 
@@ -16,6 +16,7 @@ const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary: "bg-gradient-to-br from-cta to-[#16a34a] text-background hover:opacity-95",
   secondary: "bg-surface text-text-primary hover:bg-surface-hover",
   ghost: "text-text-muted hover:text-text-primary hover:bg-surface",
+  danger: "bg-gradient-to-br from-danger to-[#B91C1C] text-white hover:opacity-95",
 };
 
 const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
