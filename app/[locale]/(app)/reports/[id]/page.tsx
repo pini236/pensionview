@@ -54,6 +54,7 @@ export default async function ReportDetailPage({
 
   return (
     <ReportDetail
+      reportId={report.id}
       reportDate={report.report_date}
       locale={locale}
       summary={summary}

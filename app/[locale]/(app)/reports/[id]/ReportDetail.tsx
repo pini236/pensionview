@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { DeleteReportDialog } from "@/components/reports/DeleteReportDialog";
 import type { Member, SavingsProduct, InsuranceProduct, InsuranceCoverage, ReportSummary } from "@/lib/types";
 
 type Tab = "balances" | "returns" | "deposits" | "insurance";
@@ -14,6 +17,7 @@ interface InsuranceWithCoverages extends InsuranceProduct {
 }
 
 interface ReportDetailProps {
+  reportId: string;
   reportDate: string;
   locale: string;
   summary: ReportSummary | null;
@@ -23,6 +27,7 @@ interface ReportDetailProps {
 }
 
 export function ReportDetail({
+  reportId,
   reportDate,
   locale,
   summary,
@@ -32,6 +37,8 @@ export function ReportDetail({
 }: ReportDetailProps) {
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const [tab, setTab] = useState<Tab>("balances");
+  const router = useRouter();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const t = useTranslations("reports");
 
   const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, { month: "long", year: "numeric" });
@@ -46,11 +53,33 @@ export function ReportDetail({
       )}
 
       <div className="rounded-xl bg-surface p-6">
-        <p className="text-sm text-text-muted">{dateLabel}</p>
-        <p className="mt-1 text-2xl font-medium text-text-primary">
-          <bdi>{formatCurrency(summary?.total_savings ?? 0, fullLocale)}</bdi>
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-text-muted">{dateLabel}</p>
+            <p className="mt-1 text-2xl font-medium text-text-primary">
+              <bdi>{formatCurrency(summary?.total_savings ?? 0, fullLocale)}</bdi>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            aria-label={t("delete.trigger")}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary cursor-pointer"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
+      {deleteOpen && (
+        <DeleteReportDialog
+          reportId={reportId}
+          reportDate={reportDate}
+          totalSavings={summary?.total_savings ?? 0}
+          ownerName={ownerMember?.name ?? null}
+          onClose={() => setDeleteOpen(false)}
+          onDeleted={() => router.push(`/${locale}/reports`)}
+        />
+      )}
 
       <SegmentedControl<Tab>
         segments={[
