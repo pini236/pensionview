@@ -80,9 +80,16 @@ export function DeleteReportDialog({
         drive: "deleted" | "missing" | "skipped" | "failed";
         driveUrl?: string;
       };
-      if (body.drive === "failed" && body.driveUrl) {
-        setDriveUrl(body.driveUrl);
-        setPhase("drive_failed");
+      if (body.drive === "failed") {
+        if (body.driveUrl) {
+          setDriveUrl(body.driveUrl);
+          setPhase("drive_failed");
+        } else {
+          // Server said Drive failed but didn't provide a cleanup URL — surface the
+          // generic error so the user knows something went wrong with Drive cleanup.
+          setPhase("confirm");
+          setError(t("errorGeneric"));
+        }
         return;
       }
       onDeleted?.();
