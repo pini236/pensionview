@@ -45,7 +45,14 @@ export async function runReportPipeline({
     const isFatal = error instanceof FatalError;
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    await recordPipelineFailureStep({ reportId, errorMessage, isFatal });
+    try {
+      await recordPipelineFailureStep({ reportId, errorMessage, isFatal });
+    } catch (recordErr) {
+      // Don't mask the original error. The failure-step itself logs its
+      // own errors via logEvent, so we just need to ensure the original
+      // pipeline error is what gets re-thrown.
+      console.error("recordPipelineFailureStep failed:", recordErr);
+    }
 
     throw error;
   }

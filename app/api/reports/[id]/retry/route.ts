@@ -75,6 +75,15 @@ export async function POST(
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
 
+  if (report.status !== "failed") {
+    return NextResponse.json(
+      {
+        error: `Only failed reports can be retried (current status: ${report.status})`,
+      },
+      { status: 409 }
+    );
+  }
+
   // --- Start (or detect already-running) pipeline ---
   const { runId, alreadyRunning } = await startReportPipeline({
     reportId: id,

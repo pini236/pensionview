@@ -85,6 +85,8 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
   });
 
   const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs so the polling effect can read the latest values without resubscribing
   // every time `state` changes (which would otherwise reset the interval).
@@ -142,22 +144,36 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
   }, [report.id, router, state.status]);
 
   async function handleRetry() {
     setIsRetrying(true);
+    setRetryError(null);
     try {
-      await fetch(`/api/reports/${report.id}/retry`, { method: "POST" });
+      const res = await fetch(`/api/reports/${report.id}/retry`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        setIsRetrying(false);
+        setRetryError("Retry failed");
+        return;
+      }
       // Optimistic: show "Retrying..." briefly, then let polling pick up the
       // status change (processing → done/failed). After 1s flip state so the
       // polling effect re-activates on the updated status.
-      setTimeout(() => {
+      retryTimeoutRef.current = setTimeout(() => {
+        retryTimeoutRef.current = null;
         setState((prev) => ({ ...prev, status: "processing" }));
         setIsRetrying(false);
       }, 1000);
     } catch {
       setIsRetrying(false);
+      setRetryError("Retry failed");
     }
   }
 
@@ -181,7 +197,9 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
             {isFailed
               ? isRetrying
                 ? t("retrying")
-                : renderFailureMessage(state, t)
+                : retryError
+                  ? t("failed_with_reason", { reason: retryError })
+                  : renderFailureMessage(state, t)
               : renderStepLabel(state, t, tSteps)}
           </p>
         </div>
