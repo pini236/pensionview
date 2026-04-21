@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { vi } from "vitest";
-import { profileFolderName, resolveFolder } from "@/lib/drive/archive";
+import { profileFolderName, resolveFolder, uploadPdfToFolder } from "@/lib/drive/archive";
 import type { drive_v3 } from "googleapis";
 
 describe("profileFolderName", () => {
@@ -74,5 +74,42 @@ describe("resolveFolder", () => {
 
     const listArgs = list.mock.calls[0][0];
     expect(listArgs.q).toContain("name='O\\'Brien'");
+  });
+});
+
+describe("uploadPdfToFolder", () => {
+  it("calls drive.files.create with PDF mime, name, parent, and stream body", async () => {
+    const create = vi.fn().mockResolvedValue({ data: { id: "uploaded-file-id" } });
+    const drive = { files: { create } } as unknown as drive_v3.Drive;
+
+    const id = await uploadPdfToFolder({
+      drive,
+      parentFolderId: "subfolder-id",
+      filename: "PensionView-2026-04-21.pdf",
+      buffer: Buffer.from("hello pdf"),
+    });
+
+    expect(id).toBe("uploaded-file-id");
+    expect(create).toHaveBeenCalledOnce();
+    const args = create.mock.calls[0][0];
+    expect(args.requestBody.name).toBe("PensionView-2026-04-21.pdf");
+    expect(args.requestBody.parents).toEqual(["subfolder-id"]);
+    expect(args.media.mimeType).toBe("application/pdf");
+    expect(args.media.body).toBeDefined(); // Readable stream
+    expect(args.fields).toBe("id");
+  });
+
+  it("throws when Drive returns no file ID", async () => {
+    const create = vi.fn().mockResolvedValue({ data: {} });
+    const drive = { files: { create } } as unknown as drive_v3.Drive;
+
+    await expect(
+      uploadPdfToFolder({
+        drive,
+        parentFolderId: "subfolder-id",
+        filename: "x.pdf",
+        buffer: Buffer.from(""),
+      })
+    ).rejects.toThrow(/no ID/i);
   });
 });

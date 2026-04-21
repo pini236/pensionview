@@ -1,4 +1,5 @@
 import type { drive_v3 } from "googleapis";
+import { Readable } from "stream";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
@@ -44,4 +45,28 @@ export async function resolveFolder(opts: {
     throw new Error("Drive returned no ID for created folder");
   }
   return createResp.data.id;
+}
+
+export async function uploadPdfToFolder(opts: {
+  drive: drive_v3.Drive;
+  parentFolderId: string;
+  filename: string;
+  buffer: Buffer;
+}): Promise<string> {
+  const { drive, parentFolderId, filename, buffer } = opts;
+  const resp = await drive.files.create({
+    requestBody: {
+      name: filename,
+      parents: [parentFolderId],
+    },
+    media: {
+      mimeType: "application/pdf",
+      body: Readable.from(buffer),
+    },
+    fields: "id",
+  });
+  if (!resp.data.id) {
+    throw new Error("Drive returned no ID for uploaded file");
+  }
+  return resp.data.id;
 }
