@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deleteDriveFile, type DriveDeleteResult } from "@/lib/google-drive";
+import { logEvent } from "@/lib/observability";
 
 interface CallerContext {
   email: string;
@@ -124,9 +125,12 @@ async function cleanupStorage(
 
   const { error } = await admin.storage.from("reports").remove(paths);
   if (error) {
-    console.warn(
-      `[reports/delete] storage cleanup partial for report ${reportId}: ${error.message}`
-    );
+    logEvent("report.storage_cleanup_failed", {
+      feature: "reports",
+      step: "storage_cleanup",
+      reportId,
+      error,
+    });
   }
 }
 
