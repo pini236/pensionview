@@ -48,11 +48,19 @@ export async function runReportPipeline({
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     const admin = createAdminClient();
+
+    const { data: current } = await admin
+      .from("reports")
+      .select("current_step_detail")
+      .eq("id", reportId)
+      .single();
+
     await admin
       .from("reports")
       .update({
         status: "failed",
         current_step_detail: {
+          ...(current?.current_step_detail ?? {}),
           failure_reason: errorMessage,
           failed_at: new Date().toISOString(),
         },

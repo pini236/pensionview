@@ -11,8 +11,8 @@ export async function markCurrentStep(
     .update({
       current_step: stepName,
       current_step_detail: {
-        ...detail,
         started_at: new Date().toISOString(),
+        ...detail,
       },
     })
     .eq("id", reportId);

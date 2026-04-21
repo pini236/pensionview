@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const client = new Anthropic();
 
-export async function generateInsight(reportId: string, idempotencyKey?: string) {
+export async function generateInsight(reportId: string) {
   const admin = createAdminClient();
 
   const { data: report } = await admin.from("reports")
@@ -70,14 +70,11 @@ Return ONLY the Hebrew text, no JSON, no markdown.`;
 
   const startTime = Date.now();
 
-  const response = await client.messages.create(
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    },
-    idempotencyKey ? { idempotencyKey } : undefined
-  );
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 500,
+    messages: [{ role: "user", content: prompt }],
+  });
 
   const latencyMs = Date.now() - startTime;
 

@@ -1,4 +1,3 @@
-import { getStepMetadata } from "workflow";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractPage } from "@/lib/pipeline/extract";
 import { FatalError } from "workflow";
@@ -45,10 +44,10 @@ export async function extractPageStep({
   const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
   const base64 = pdfBuffer.toString("base64");
 
-  const { stepId } = getStepMetadata();
+  // WDK step memoization + storage-existence guard handle dedup; Anthropic Messages API has no client idempotency header.
   const startedAt = Date.now();
 
-  const pageData = await extractPage(base64, page, stepId);
+  const pageData = await extractPage(base64, page);
 
   await admin.storage.from("reports").upload(
     storagePath,
