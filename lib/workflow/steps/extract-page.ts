@@ -64,3 +64,6 @@ export async function extractPageStep({
     pageCount,
   });
 }
+
+// Anthropic API calls — 529 overloads + transient errors are common.
+extractPageStep.maxRetries = 4;

@@ -55,3 +55,6 @@ export async function downloadStep({ reportId }: { reportId: string }): Promise<
 
   return { rawPdfPath: storagePath };
 }
+
+// External Surense API + storage upload — transient failures are common.
+downloadStep.maxRetries = 4;

@@ -80,3 +80,6 @@ export async function decryptStep({
 
   return { decryptedPath, pageCount };
 }
+
+// Deterministic CPU-only step — retry won't help.
+decryptStep.maxRetries = 0;

@@ -47,3 +47,6 @@ export async function validateStep({
     pageCount,
   });
 }
+
+// Deterministic validation — retry won't help.
+validateStep.maxRetries = 0;

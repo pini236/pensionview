@@ -24,3 +24,6 @@ export async function finalizeStep({ reportId }: { reportId: string }): Promise<
     reportId,
   });
 }
+
+// Single DB UPDATE — deterministic, retry won't help.
+finalizeStep.maxRetries = 0;

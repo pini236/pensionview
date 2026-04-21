@@ -1,8 +1,7 @@
 import { google } from "googleapis";
 import { gmail_v1 } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decrypt } from "@/lib/crypto";
-import { getGoogleOAuth2Client } from "@/lib/google-auth";
+import { getAuthedOAuth2Client } from "@/lib/google-auth";
 
 const SENDER_EMAIL = "no-reply@surense.com";
 const SUBJECT_PATTERN = "דוח מצב ביטוח ופנסיה";
@@ -12,17 +11,22 @@ export async function setupGmailWatch(profileId: string) {
   const key = process.env.ENCRYPTION_KEY!;
 
   const { data: profile } = await admin.from("profiles")
-    .select("*")
+    .select("id, google_access_token, google_refresh_token, google_token_expiry")
     .eq("id", profileId)
     .single();
 
   if (!profile?.google_access_token) throw new Error("No Google token");
 
-  const oauth2Client = getGoogleOAuth2Client();
-  oauth2Client.setCredentials({
-    access_token: decrypt(profile.google_access_token, key),
-    refresh_token: profile.google_refresh_token ? decrypt(profile.google_refresh_token, key) : undefined,
-  });
+  const oauth2Client = getAuthedOAuth2Client(
+    {
+      id: profile.id as string,
+      google_access_token: profile.google_access_token as string,
+      google_refresh_token: (profile.google_refresh_token as string | null) ?? null,
+      google_token_expiry: (profile.google_token_expiry as string | null) ?? null,
+    },
+    admin,
+    key
+  );
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
@@ -60,17 +64,22 @@ export async function processGmailNotification(historyId: string, profileEmail: 
   const key = process.env.ENCRYPTION_KEY!;
 
   const { data: profile } = await admin.from("profiles")
-    .select("*")
+    .select("id, google_access_token, google_refresh_token, google_token_expiry")
     .eq("email", profileEmail)
     .single();
 
   if (!profile?.google_access_token) return [];
 
-  const oauth2Client = getGoogleOAuth2Client();
-  oauth2Client.setCredentials({
-    access_token: decrypt(profile.google_access_token, key),
-    refresh_token: profile.google_refresh_token ? decrypt(profile.google_refresh_token, key) : undefined,
-  });
+  const oauth2Client = getAuthedOAuth2Client(
+    {
+      id: profile.id as string,
+      google_access_token: profile.google_access_token as string,
+      google_refresh_token: (profile.google_refresh_token as string | null) ?? null,
+      google_token_expiry: (profile.google_token_expiry as string | null) ?? null,
+    },
+    admin,
+    key
+  );
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 

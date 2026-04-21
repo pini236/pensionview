@@ -19,3 +19,6 @@ export async function insightStep({ reportId }: { reportId: string }): Promise<v
     durationMs: Date.now() - startedAt,
   });
 }
+
+// Anthropic API call — 529 overloads + transient errors are common.
+insightStep.maxRetries = 4;
