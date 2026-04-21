@@ -7,6 +7,12 @@ import { getAuthedOAuth2Client } from "@/lib/google-auth";
 const SENDER_EMAIL = "no-reply@surense.com";
 const SUBJECT_PATTERN = "דוח מצב ביטוח ופנסיה";
 
+// Gmail label that Surense emails are auto-tagged with by a user-side
+// Gmail filter. The watch is scoped to this label so Pub/Sub only fires
+// when a Surense email arrives — not on every inbox event. The label
+// must exist in the user's Gmail; setupGmailWatch resolves its ID.
+const TRIGGER_LABEL_NAME = process.env.GMAIL_TRIGGER_LABEL ?? "surense-reports";
+
 // Optional comma-separated list of additional senders that may trigger the
 // import flow. Used for end-to-end testing without spoofing: forward a real
 // Surense email to yourself, set this env var to your own address, and the
@@ -52,11 +58,21 @@ export async function setupGmailWatch(profileId: string) {
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
+  // Resolve the trigger label's ID — the watch API takes IDs, not names.
+  // If the user hasn't created the Gmail filter that auto-applies this
+  // label, fall back to INBOX so the watch still functions (with the
+  // efficiency cost of firing on every inbox event).
+  const labelsResp = await gmail.users.labels.list({ userId: "me" });
+  const triggerLabelId = labelsResp.data.labels?.find(
+    (l) => l.name === TRIGGER_LABEL_NAME
+  )?.id;
+  const watchedLabel = triggerLabelId ?? "INBOX";
+
   const response = await gmail.users.watch({
     userId: "me",
     requestBody: {
       topicName: process.env.GOOGLE_PUBSUB_TOPIC!,
-      labelIds: ["INBOX"],
+      labelIds: [watchedLabel],
     },
   });
 
@@ -114,10 +130,12 @@ export async function processGmailNotification(_historyId: string, profileEmail:
   // unique index plus ignoreDuplicates makes re-processing a no-op. The
   // 1-day window catches anything missed during outages without
   // re-scanning forever.
+  // Same label as the watch — Gmail's q-syntax accepts the name directly.
+  // Falls back to a broad INBOX scan if the user hasn't created the filter
+  // (matches the watch's fallback behaviour).
   const list = await gmail.users.messages.list({
     userId: "me",
-    labelIds: ["INBOX"],
-    q: "newer_than:1d",
+    q: `label:${TRIGGER_LABEL_NAME} newer_than:1d`,
     maxResults: 20,
   });
 
