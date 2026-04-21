@@ -124,4 +124,22 @@ describe("DeleteReportDialog", () => {
     );
     expect(screen.getByRole("button", { name: "Delete" })).not.toBeDisabled();
   });
+
+  it("falls back to generic error when drive=failed has no driveUrl", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, drive: "failed" }), // no driveUrl
+    });
+    const { onDeleted, onClose } = renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await waitFor(() =>
+      expect(
+        screen.getByText("Could not delete report. Please try again.")
+      ).toBeInTheDocument()
+    );
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Delete" })).not.toBeDisabled();
+  });
 });
