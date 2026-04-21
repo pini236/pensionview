@@ -142,4 +142,32 @@ describe("DeleteReportDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Delete" })).not.toBeDisabled();
   });
+
+  it("treats drive=missing as success (closes + fires onDeleted)", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, drive: "missing" }),
+    });
+    const { onDeleted, onClose } = renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await waitFor(() => {
+      expect(onDeleted).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("treats drive=skipped as success (closes + fires onDeleted)", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, drive: "skipped" }),
+    });
+    const { onDeleted, onClose } = renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await waitFor(() => {
+      expect(onDeleted).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
 });
