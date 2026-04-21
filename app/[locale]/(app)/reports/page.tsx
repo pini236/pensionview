@@ -9,6 +9,11 @@ import type { Member } from "@/lib/types";
 import { ReportRowActions } from "@/components/reports/ReportRowActions";
 import { ReportProcessingRow } from "@/components/reports/ReportProcessingRow";
 import { ProcessingReportsProvider } from "@/components/reports/ProcessingReportsProvider";
+import {
+  ReportsUploadProvider,
+  ReportUploadButton,
+  ReportUploadEmptyState,
+} from "@/components/reports/ReportsUploadAffordance";
 import type { ProcessingReportStatus } from "@/app/api/reports/processing/route";
 
 export async function generateMetadata({
@@ -90,21 +95,29 @@ export default async function ReportsPage({
   );
   const isCombined = active.kind === "all";
 
-  return (
-    <div className="space-y-6">
-      {active.kind === "single" && (
-        <p className="text-xs uppercase tracking-wide text-text-muted">
-          {active.member.name} ·{" "}
-          {locale === "he" ? "דוחות" : "Reports"}
-        </p>
-      )}
-      {isCombined && (
-        <p className="text-xs uppercase tracking-wide text-text-muted">
-          {locale === "he" ? "כל המשפחה · דוחות" : "All household · Reports"}
-        </p>
-      )}
+  const hasAnyReports = years.length > 0 || inFlight.length > 0;
 
-      {inFlight.length > 0 && (
+  return (
+    <ReportsUploadProvider>
+      <div className="space-y-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            {active.kind === "single" && (
+              <p className="text-xs uppercase tracking-wide text-text-muted">
+                {active.member.name} ·{" "}
+                {locale === "he" ? "דוחות" : "Reports"}
+              </p>
+            )}
+            {isCombined && (
+              <p className="text-xs uppercase tracking-wide text-text-muted">
+                {locale === "he" ? "כל המשפחה · דוחות" : "All household · Reports"}
+              </p>
+            )}
+          </div>
+          {hasAnyReports && <ReportUploadButton />}
+        </div>
+
+        {inFlight.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-medium text-text-muted">
             {tProcessing("title")}
@@ -143,11 +156,7 @@ export default async function ReportsPage({
         </section>
       )}
 
-      {years.length === 0 && inFlight.length === 0 && (
-        <p className="text-text-muted">
-          {locale === "he" ? "אין דוחות עדיין" : "No reports yet"}
-        </p>
-      )}
+        {!hasAnyReports && <ReportUploadEmptyState />}
       {years.map((year) => (
         <section key={year}>
           <h2 className="mb-3 text-sm font-medium text-text-muted">{year}</h2>
@@ -205,6 +214,7 @@ export default async function ReportsPage({
           </div>
         </section>
       ))}
-    </div>
+      </div>
+    </ReportsUploadProvider>
   );
 }

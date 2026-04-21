@@ -13,14 +13,10 @@ import {
   User,
   Calendar,
 } from "lucide-react";
-
-type UploadStatus = "pending" | "processing" | "done" | "error";
-
-interface UploadResult {
-  fileName: string;
-  status: UploadStatus;
-  message?: string;
-}
+import {
+  useReportUpload,
+  type UploadStatus,
+} from "@/lib/hooks/use-report-upload";
 
 // Shape returned by /api/members (Member type from lib/types). We only need
 // the fields the picker renders.
@@ -40,11 +36,14 @@ export default function BackfillPage() {
   const [profileId, setProfileId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [reportDate, setReportDate] = useState<string>("");
-  const [results, setResults] = useState<UploadResult[]>([]);
-  const [processing, setProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { upload, isUploading, results } = useReportUpload({
+    successMessage: isHe ? "העיבוד החל" : "Processing started",
+    fallbackErrorMessage: isHe ? "שגיאה לא ידועה" : "Unknown error",
+  });
 
   useEffect(() => {
     // Use /api/members instead of a direct Supabase query so the household
@@ -111,57 +110,16 @@ export default function BackfillPage() {
 
   async function handleUpload() {
     if (!profileId || files.length === 0) return;
-    setProcessing(true);
 
-    const newResults: UploadResult[] = files.map((f) => ({
-      fileName: f.name,
-      status: "pending",
-    }));
-    setResults(newResults);
+    const final = await upload({
+      files,
+      profileId,
+      reportDate: reportDate || undefined,
+    });
 
-    const succeededReportIds: string[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      newResults[i].status = "processing";
-      setResults([...newResults]);
-
-      try {
-        const formData = new FormData();
-        formData.append("file", files[i]);
-        formData.append("profileId", profileId);
-        // Only send the date if the user explicitly entered one. Otherwise
-        // let the server fall back to filename parsing.
-        if (reportDate) formData.append("reportDate", reportDate);
-
-        const response = await fetch("/api/pipeline/backfill", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = (await response.json().catch(() => ({}))) as {
-            ok?: boolean;
-            reportId?: string;
-          };
-          newResults[i].status = "done";
-          newResults[i].message = isHe ? "העיבוד החל" : "Processing started";
-          if (data.reportId) {
-            succeededReportIds.push(data.reportId);
-          }
-        } else {
-          const data = await response.json().catch(() => ({}));
-          newResults[i].status = "error";
-          newResults[i].message = data.error || (isHe ? "שגיאה לא ידועה" : "Unknown error");
-        }
-      } catch (error) {
-        newResults[i].status = "error";
-        newResults[i].message = String(error);
-      }
-
-      setResults([...newResults]);
-    }
-
-    setProcessing(false);
+    const succeededReportIds = final
+      .filter((r) => r.status === "done" && r.reportId)
+      .map((r) => r.reportId as string);
 
     // Give the user a brief moment to see the "Processing started" confirmation
     // before navigating away. Single success → detail page; multiple → list.
@@ -306,10 +264,10 @@ export default function BackfillPage() {
         <button
           type="button"
           onClick={handleUpload}
-          disabled={processing || !profileId || files.length === 0}
+          disabled={isUploading || !profileId || files.length === 0}
           className="w-full cursor-pointer rounded-lg bg-cta px-6 py-3 font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
-          {processing
+          {isUploading
             ? isHe
               ? "מעבד..."
               : "Processing..."

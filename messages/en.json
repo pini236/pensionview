@@ -84,6 +84,22 @@
       "done": "Done",
       "errorGeneric": "Could not delete report. Please try again."
     },
+    "upload": {
+      "button": "Upload report",
+      "modal_title": "Upload reports",
+      "dropzone_hint": "Drop PDFs here or click to browse",
+      "dropzone_drag_active": "Drop to upload",
+      "choose_profile": "Choose profile",
+      "report_date_label": "Report date (optional)",
+      "report_date_hint": "Leave blank to auto-detect from filename",
+      "submit_one": "Upload 1 report",
+      "submit_many": "Upload {count} reports",
+      "uploading": "Uploading...",
+      "close": "Close",
+      "processing_started": "Processing started",
+      "error": "Upload failed",
+      "empty_state_cta": "Upload your first report"
+    },
     "processing": {
       "title": "Processing",
       "failed_title": "Failed",
