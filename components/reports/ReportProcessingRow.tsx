@@ -18,7 +18,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -83,6 +84,8 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
     current_step_detail: report.current_step_detail,
   });
 
+  const [isRetrying, setIsRetrying] = useState(false);
+
   // Refs so the polling effect can read the latest values without resubscribing
   // every time `state` changes (which would otherwise reset the interval).
   const stateRef = useRef(state);
@@ -142,6 +145,22 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
     };
   }, [report.id, router, state.status]);
 
+  async function handleRetry() {
+    setIsRetrying(true);
+    try {
+      await fetch(`/api/reports/${report.id}/retry`, { method: "POST" });
+      // Optimistic: show "Retrying..." briefly, then let polling pick up the
+      // status change (processing → done/failed). After 1s flip state so the
+      // polling effect re-activates on the updated status.
+      setTimeout(() => {
+        setState((prev) => ({ ...prev, status: "processing" }));
+        setIsRetrying(false);
+      }, 1000);
+    } catch {
+      setIsRetrying(false);
+    }
+  }
+
   const dateLabel = new Date(report.report_date).toLocaleDateString(
     fullLocale,
     { month: "long", year: "numeric" }
@@ -159,12 +178,28 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-text-primary">{dateLabel}</p>
           <p className="mt-0.5 truncate text-xs text-text-muted">
-            {isFailed ? renderFailureMessage(state, t) : renderStepLabel(state, t, tSteps)}
+            {isFailed
+              ? isRetrying
+                ? t("retrying")
+                : renderFailureMessage(state, t)
+              : renderStepLabel(state, t, tSteps)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 text-text-muted">
           {isFailed ? (
-            <AlertCircle size={16} className="text-loss" />
+            <>
+              <AlertCircle size={16} className="text-loss" />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                aria-label={t("retry")}
+              >
+                <RefreshCw size={12} className={isRetrying ? "animate-spin" : ""} />
+                <span className="ms-1">{t("retry")}</span>
+              </Button>
+            </>
           ) : (
             <Loader2 size={16} className="animate-spin" />
           )}

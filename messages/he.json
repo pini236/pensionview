@@ -70,6 +70,8 @@
       "polling": "מעבד...",
       "failed_default": "העיבוד נכשל.",
       "failed_with_reason": "העיבוד נכשל: {reason}",
+      "retry": "נסה שוב",
+      "retrying": "מנסה שוב...",
       "steps": {
         "download": "מוריד את הקובץ",
         "decrypt": "מפענח את הקובץ",

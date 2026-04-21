@@ -70,6 +70,8 @@
       "polling": "Working...",
       "failed_default": "Processing failed.",
       "failed_with_reason": "Processing failed: {reason}",
+      "retry": "Retry",
+      "retrying": "Retrying...",
       "steps": {
         "download": "Downloading PDF",
         "decrypt": "Decrypting PDF",
