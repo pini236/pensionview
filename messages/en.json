@@ -72,6 +72,19 @@
       "failed_with_reason": "Processing failed: {reason}",
       "retry": "Retry",
       "retrying": "Retrying...",
+      "view_title": "Processing your report",
+      "view_subtitle": "This usually takes about a minute.",
+      "delete_action": "Delete",
+      "starting": "Starting...",
+      "phases": {
+        "decrypt": "Decrypting PDF",
+        "upload_drive": "Saving to Google Drive",
+        "extract": "Extracting pages",
+        "extract_active": "Extracting page {page} of {total}",
+        "validate": "Validating data",
+        "insight": "Generating insights",
+        "finalize": "Finalizing"
+      },
       "steps": {
         "download": "Downloading PDF",
         "decrypt": "Decrypting PDF",

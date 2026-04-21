@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   UploadCloud,
@@ -31,6 +32,7 @@ interface Profile {
 
 export default function BackfillPage() {
   const locale = useLocale();
+  const router = useRouter();
   const isHe = locale === "he";
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -117,6 +119,8 @@ export default function BackfillPage() {
     }));
     setResults(newResults);
 
+    const succeededReportIds: string[] = [];
+
     for (let i = 0; i < files.length; i++) {
       newResults[i].status = "processing";
       setResults([...newResults]);
@@ -135,8 +139,15 @@ export default function BackfillPage() {
         });
 
         if (response.ok) {
+          const data = (await response.json().catch(() => ({}))) as {
+            ok?: boolean;
+            reportId?: string;
+          };
           newResults[i].status = "done";
           newResults[i].message = isHe ? "העיבוד החל" : "Processing started";
+          if (data.reportId) {
+            succeededReportIds.push(data.reportId);
+          }
         } else {
           const data = await response.json().catch(() => ({}));
           newResults[i].status = "error";
@@ -151,6 +162,18 @@ export default function BackfillPage() {
     }
 
     setProcessing(false);
+
+    // Give the user a brief moment to see the "Processing started" confirmation
+    // before navigating away. Single success → detail page; multiple → list.
+    if (succeededReportIds.length === 1) {
+      setTimeout(() => {
+        router.push(`/${locale}/reports/${succeededReportIds[0]}`);
+      }, 500);
+    } else if (succeededReportIds.length > 1) {
+      setTimeout(() => {
+        router.push(`/${locale}/reports`);
+      }, 500);
+    }
   }
 
   const dropzoneClasses = [
