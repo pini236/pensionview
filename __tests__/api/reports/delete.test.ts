@@ -18,6 +18,8 @@ function makeQuery(result: { data: unknown; error: unknown }) {
     maybeSingle: vi.fn(() => Promise.resolve(result)),
     single: vi.fn(() => Promise.resolve(result)),
     delete: vi.fn(() => q),
+    then: (onFulfilled: (v: unknown) => unknown) =>
+      Promise.resolve(result).then(onFulfilled),
   };
   return q;
 }
@@ -190,5 +192,21 @@ describe("DELETE /api/reports/[id]", () => {
     const res = await DELETE(makeReq(), { params: Promise.resolve({ id: REPORT_ID }) });
     expect(res.status).toBe(200);
     expect(deleteQ.delete).toHaveBeenCalled();
+  });
+
+  it("returns 500 when DB delete fails", async () => {
+    setAuthedUser();
+    deleteDriveFile.mockResolvedValue({ kind: "deleted" });
+    const dbError = makeQuery({ data: null, error: { message: "boom" } });
+    adminFrom
+      .mockReturnValueOnce(setSelfProfile())
+      .mockReturnValueOnce(setHouseholdMembers())
+      .mockReturnValueOnce(setReport())
+      .mockReturnValueOnce(dbError);
+
+    const res = await DELETE(makeReq(), { params: Promise.resolve({ id: REPORT_ID }) });
+    const body = await res.json();
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("boom");
   });
 });
