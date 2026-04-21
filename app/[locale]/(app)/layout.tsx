@@ -3,8 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { TopBar } from "@/components/nav/TopBar";
 import { Sidebar } from "@/components/nav/Sidebar";
-import { AnimatedBackground } from "@/components/background/AnimatedBackground";
-import { FloatingParticles } from "@/components/background/FloatingParticles";
+import { AppBackgroundMotion } from "@/components/background/AppBackgroundMotion";
 import { AdvisorChat } from "@/components/advisor/AdvisorChat";
 import { getActiveMember } from "@/lib/active-member";
 import type { InitialActive } from "@/lib/hooks/use-active-member";
@@ -40,8 +39,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen pb-24 pt-14 lg:pb-0 lg:pt-0">
-      <AnimatedBackground />
-      <FloatingParticles />
+      <AppBackgroundMotion />
       <TopBar members={members} initialActive={initialActive} />
       <Sidebar members={members} initialActive={initialActive} />
       <main className="mx-auto w-full max-w-[1600px] px-4 py-4 md:px-8 lg:ms-60 lg:px-12 lg:pb-8 lg:pt-8">
