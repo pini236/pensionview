@@ -18,6 +18,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -34,6 +35,14 @@ type PollMap = Map<string, ProcessingReportStatus>;
 
 interface ProcessingReportsCtx {
   getReport: (id: string) => ProcessingReportStatus | undefined;
+  /**
+   * Live snapshot of every in-flight report the polling endpoint currently
+   * returns — including reports that didn't exist when the page was
+   * server-rendered (e.g. uploaded from another tab or right before the user
+   * navigated here from /admin/backfill). Always returns a fresh array so
+   * React iterates correctly when the underlying map changes.
+   */
+  allReports: ProcessingReportStatus[];
 }
 
 const ProcessingReportsContext = createContext<ProcessingReportsCtx | null>(null);
@@ -137,8 +146,16 @@ export function ProcessingReportsProvider({
     [pollMap],
   );
 
+  // Stable-per-pollMap array so consumers can iterate without triggering
+  // pointless re-renders. Sorted by id for a deterministic order; the parent
+  // page re-sorts visually as needed.
+  const allReports = useMemo(
+    () => Array.from(pollMap.values()).sort((a, b) => a.id.localeCompare(b.id)),
+    [pollMap],
+  );
+
   return (
-    <ProcessingReportsContext.Provider value={{ getReport }}>
+    <ProcessingReportsContext.Provider value={{ getReport, allReports }}>
       {children}
     </ProcessingReportsContext.Provider>
   );
@@ -156,4 +173,17 @@ export function useProcessingReport(
     throw new Error("useProcessingReport must be used inside ProcessingReportsProvider");
   }
   return ctx.getReport(reportId);
+}
+
+/**
+ * Live list of every in-flight report from the polling endpoint. Use this
+ * instead of a server-rendered iteration when the UI must show reports that
+ * appeared after the page loaded (multi-file upload → /reports flow).
+ */
+export function useProcessingReportsList(): ProcessingReportStatus[] {
+  const ctx = useContext(ProcessingReportsContext);
+  if (!ctx) {
+    throw new Error("useProcessingReportsList must be used inside ProcessingReportsProvider");
+  }
+  return ctx.allReports;
 }

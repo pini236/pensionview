@@ -60,6 +60,7 @@ interface PollState {
   status: string;
   current_step: string | null;
   current_step_detail: Record<string, unknown> | null;
+  report_date: string | null;
 }
 
 export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
@@ -70,11 +71,15 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
 
   // Read the latest poll state from the shared provider. Fall back to the
   // server-rendered row props on the first render (before the first tick).
+  // report_date is included so the row reflects the date the moment the
+  // pipeline writes it (extract step on the cover page, or validate as a
+  // backstop) — without waiting for a full page refresh.
   const polled = useProcessingReport(report.id);
   const state: PollState = polled ?? {
     status: report.status,
     current_step: report.current_step,
     current_step_detail: report.current_step_detail,
+    report_date: report.report_date,
   };
 
   // Retry state — local only, not part of the shared polling context.
@@ -116,9 +121,11 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
     }
   }
 
-  // Date may be null until the validate step extracts it from the PDF cover.
-  const dateLabel = report.report_date
-    ? new Date(report.report_date).toLocaleDateString(fullLocale, {
+  // Date may be null until the extract/validate step pulls it from the PDF
+  // cover. We read it from the polled state so it updates live, falling back
+  // to the server-rendered prop only on the first render.
+  const dateLabel = state.report_date
+    ? new Date(state.report_date).toLocaleDateString(fullLocale, {
         month: "long",
         year: "numeric",
       })

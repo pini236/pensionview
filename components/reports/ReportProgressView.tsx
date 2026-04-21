@@ -135,16 +135,20 @@ export function ReportProgressView({
   const [status, setStatus] = useState(initialStatus);
   const [currentStep, setCurrentStep] = useState<string | null>(initialStep);
   const [currentDetail, setCurrentDetail] = useState<Record<string, unknown> | null>(initialDetail);
+  // Track date in local state so the header reflects it the moment the
+  // pipeline writes it (extract step on cover page, validate as backstop)
+  // — without waiting for a router.refresh + full server re-render.
+  const [liveReportDate, setLiveReportDate] = useState<string | null>(reportDate);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const stateRef = useRef({ status, currentStep, currentDetail });
+  const stateRef = useRef({ status, currentStep, currentDetail, liveReportDate });
   useEffect(() => {
-    stateRef.current = { status, currentStep, currentDetail };
-  }, [status, currentStep, currentDetail]);
+    stateRef.current = { status, currentStep, currentDetail, liveReportDate };
+  }, [status, currentStep, currentDetail, liveReportDate]);
 
   useEffect(() => {
     if (status !== "processing") return;
@@ -159,6 +163,7 @@ export function ReportProgressView({
           status: string;
           current_step: string | null;
           current_step_detail: Record<string, unknown> | null;
+          report_date: string | null;
         };
         if (cancelled) return;
 
@@ -171,6 +176,9 @@ export function ReportProgressView({
           setStatus(body.status);
           setCurrentStep(body.current_step);
           setCurrentDetail(body.current_step_detail);
+        }
+        if (body.report_date !== prev.liveReportDate) {
+          setLiveReportDate(body.report_date);
         }
 
         if (body.status === "done") {
@@ -232,8 +240,8 @@ export function ReportProgressView({
     return page !== null && total !== null ? { page, total } : null;
   })();
 
-  const dateLabel = reportDate
-    ? new Date(reportDate).toLocaleDateString(fullLocale, {
+  const dateLabel = liveReportDate
+    ? new Date(liveReportDate).toLocaleDateString(fullLocale, {
         month: "long",
         year: "numeric",
       })
@@ -306,7 +314,7 @@ export function ReportProgressView({
       {deleteOpen && (
         <DeleteReportDialog
           reportId={reportId}
-          reportDate={reportDate}
+          reportDate={liveReportDate}
           totalSavings={0}
           ownerName={ownerMember?.name ?? null}
           onClose={() => setDeleteOpen(false)}

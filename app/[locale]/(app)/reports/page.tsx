@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { getActiveMember } from "@/lib/active-member";
 import { formatCurrency } from "@/lib/format";
 import type { Member } from "@/lib/types";
 import { ReportRowActions } from "@/components/reports/ReportRowActions";
-import { ReportProcessingRow } from "@/components/reports/ReportProcessingRow";
 import { ProcessingReportsProvider } from "@/components/reports/ProcessingReportsProvider";
+import { InFlightReportsSection } from "@/components/reports/InFlightReportsSection";
 import {
   ReportsUploadProvider,
   ReportUploadButton,
@@ -38,10 +38,6 @@ export default async function ReportsPage({
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const sp = await searchParams;
   const active = await getActiveMember(sp);
-  const tProcessing = await getTranslations({
-    locale,
-    namespace: "reports.processing",
-  });
 
   if (active.householdMemberIds.length === 0) {
     return <div className="text-text-muted">Profile not found</div>;
@@ -125,44 +121,29 @@ export default async function ReportsPage({
           {hasAnyReports && <ReportUploadButton />}
         </div>
 
-        {inFlight.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-text-muted">
-            {tProcessing("title")}
-          </h2>
-          <ProcessingReportsProvider
-            initialReports={inFlight.map(
-              (r): ProcessingReportStatus => ({
-                id: r.id,
-                status: r.status,
-                current_step: r.current_step ?? null,
-                current_step_detail:
-                  (r.current_step_detail as Record<string, unknown> | null) ??
-                  null,
-                report_date: r.report_date,
-              })
-            )}
-          >
-            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
-              {inFlight.map((report) => (
-                <ReportProcessingRow
-                  key={report.id}
-                  report={{
-                    id: report.id,
-                    status: report.status,
-                    current_step: report.current_step ?? null,
-                    current_step_detail:
-                      (report.current_step_detail as Record<string, unknown> | null) ??
-                      null,
-                    report_date: report.report_date,
-                    created_at: report.created_at,
-                  }}
-                />
-              ))}
-            </div>
-          </ProcessingReportsProvider>
-        </section>
-      )}
+        {/*
+          The provider is mounted unconditionally so its 3-second poll runs
+          even when SSR returned no in-flight rows. This is what makes
+          uploads from /admin/backfill (which router.push to /reports right
+          after kicking off the workflow) appear without the user needing
+          to F5 — the next poll picks them up and InFlightReportsSection
+          renders them from the live snapshot.
+        */}
+        <ProcessingReportsProvider
+          initialReports={inFlight.map(
+            (r): ProcessingReportStatus => ({
+              id: r.id,
+              status: r.status,
+              current_step: r.current_step ?? null,
+              current_step_detail:
+                (r.current_step_detail as Record<string, unknown> | null) ??
+                null,
+              report_date: r.report_date,
+            })
+          )}
+        >
+          <InFlightReportsSection />
+        </ProcessingReportsProvider>
 
         {!hasAnyReports && <ReportUploadEmptyState />}
       {undatedDone.length > 0 && (

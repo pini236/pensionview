@@ -4,6 +4,8 @@ import { FatalError } from "workflow";
 import { logEvent } from "@/lib/observability";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export async function extractPageStep({
   reportId,
   page,
@@ -54,6 +56,31 @@ export async function extractPageStep({
     new Blob([JSON.stringify(pageData)], { type: "application/json" }),
     { upsert: true }
   );
+
+  // Opportunistic date fill: cover/letter pages return report_date, and the
+  // cover is page 1 so this typically fires after the first extraction. The
+  // CAS-style WHERE report_date IS NULL prevents us from clobbering a value
+  // the user set manually or that an earlier page already provided. Errors
+  // (incl. unique violation when another report at this date exists) are
+  // swallowed — validate's date logic is the authoritative backstop and
+  // surfaces dup conflicts as a fatal failure with a clear message.
+  const extractedDate = (pageData as { report_date?: unknown }).report_date;
+  if (typeof extractedDate === "string" && ISO_DATE_RE.test(extractedDate)) {
+    const { error: dateErr } = await admin
+      .from("reports")
+      .update({ report_date: extractedDate })
+      .eq("id", reportId)
+      .is("report_date", null);
+    if (dateErr) {
+      logEvent("pipeline.extract.date_update_failed", {
+        feature: "pipeline",
+        reportId,
+        page,
+        extractedDate,
+        error: dateErr,
+      });
+    }
+  }
 
   logEvent("pipeline.step.complete", {
     feature: "pipeline",
