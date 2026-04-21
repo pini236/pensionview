@@ -2,12 +2,29 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Upload, Mail, Sparkles } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
-export function NoReportsState({ memberName }: { memberName?: string }) {
+interface NoReportsStateProps {
+  memberName?: string;
+  /**
+   * Optional click handler. When provided, the primary CTA becomes a button
+   * that opens the inline upload modal instead of linking to /admin/backfill.
+   * Used on the reports page; the dashboard still uses the default link.
+   */
+  onUploadClick?: () => void;
+}
+
+export function NoReportsState({ memberName, onUploadClick }: NoReportsStateProps) {
   const locale = useLocale();
+  const tUpload = useTranslations("reports.upload");
   const isHebrew = locale === "he";
   const greeting = memberName ? (isHebrew ? `שלום ${memberName}` : `Hi ${memberName}`) : null;
+
+  const ctaLabel = onUploadClick
+    ? tUpload("empty_state_cta")
+    : isHebrew
+      ? "טען דוחות"
+      : "Upload reports";
 
   return (
     <motion.div
@@ -42,13 +59,24 @@ export function NoReportsState({ memberName }: { memberName?: string }) {
       </p>
 
       <div className="mt-6 flex flex-col items-stretch gap-2">
-        <Link
-          href={`/${locale}/admin/backfill`}
-          className="group flex items-center justify-center gap-2 rounded-lg bg-cta px-6 py-3 font-medium text-background transition-opacity hover:opacity-90 cursor-pointer"
-        >
-          <Upload className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-          {isHebrew ? "טען דוחות" : "Upload reports"}
-        </Link>
+        {onUploadClick ? (
+          <button
+            type="button"
+            onClick={onUploadClick}
+            className="group flex items-center justify-center gap-2 rounded-lg bg-cta px-6 py-3 font-medium text-background transition-opacity hover:opacity-90 cursor-pointer"
+          >
+            <Upload className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+            {ctaLabel}
+          </button>
+        ) : (
+          <Link
+            href={`/${locale}/admin/backfill`}
+            className="group flex items-center justify-center gap-2 rounded-lg bg-cta px-6 py-3 font-medium text-background transition-opacity hover:opacity-90 cursor-pointer"
+          >
+            <Upload className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+            {ctaLabel}
+          </Link>
+        )}
         <Link
           href={`/${locale}/settings`}
           className="flex items-center justify-center gap-2 rounded-lg bg-surface px-6 py-3 font-medium text-text-primary transition-colors hover:bg-surface-hover cursor-pointer"

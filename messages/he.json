@@ -84,6 +84,22 @@
       "done": "סיום",
       "errorGeneric": "לא ניתן היה למחוק את הדוח. נסה שוב."
     },
+    "upload": {
+      "button": "העלה דוח",
+      "modal_title": "העלאת דוחות",
+      "dropzone_hint": "גרור קבצי PDF לכאן או לחץ לבחירה",
+      "dropzone_drag_active": "שחרר להעלאה",
+      "choose_profile": "בחר פרופיל",
+      "report_date_label": "תאריך הדוח (אופציונלי)",
+      "report_date_hint": "השאר ריק לזיהוי אוטומטי מהשם של הקובץ",
+      "submit_one": "העלה דוח אחד",
+      "submit_many": "העלה {count} דוחות",
+      "uploading": "מעלה...",
+      "close": "סגור",
+      "processing_started": "העיבוד החל",
+      "error": "ההעלאה נכשלה",
+      "empty_state_cta": "העלה את הדוח הראשון שלך"
+    },
     "processing": {
       "title": "בעיבוד",
       "failed_title": "נכשל",
