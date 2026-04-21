@@ -81,21 +81,16 @@ function sanitizeIlikeTerm(input: string): string {
   return input.replace(/[\\%_]/g, "").trim();
 }
 
-export async function processGmailNotification(historyId: string, profileEmail: string): Promise<DiscoveredReport[]> {
+export async function processGmailNotification(_historyId: string, profileEmail: string): Promise<DiscoveredReport[]> {
   const admin = createAdminClient();
   const key = process.env.ENCRYPTION_KEY!;
-
-  console.log(JSON.stringify({ tag: "gmail.notify.in", historyId, profileEmail }));
 
   const { data: profile } = await admin.from("profiles")
     .select("id, google_access_token, google_refresh_token, google_token_expiry")
     .eq("email", profileEmail)
     .single();
 
-  if (!profile?.google_access_token) {
-    console.log(JSON.stringify({ tag: "gmail.notify.no_profile", profileEmail }));
-    return [];
-  }
+  if (!profile?.google_access_token) return [];
 
   const oauth2Client = getAuthedOAuth2Client(
     {
@@ -110,14 +105,15 @@ export async function processGmailNotification(historyId: string, profileEmail: 
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-  // Originally this used gmail.users.history.list({ startHistoryId }) but
-  // Gmail's "after the specified startHistoryId" semantics means passing
-  // the notification's historyId returns ZERO records (the change IS at
-  // that historyId, not after). Doing it correctly would require tracking
-  // a per-profile last-seen historyId. Instead we just scan recent INBOX
-  // messages directly and let the (profile_id, report_date) unique index
-  // dedupe — same end result, no state to maintain. Window is 1 day so we
-  // catch anything missed during outages without re-scanning forever.
+  // We deliberately ignore the historyId from the Pub/Sub notification.
+  // gmail.users.history.list({ startHistoryId }) returns records strictly
+  // AFTER the given historyId, but the notification's historyId IS the
+  // latest event — so listing returns zero. Using it correctly would
+  // require persisting a per-profile last-seen historyId. Scanning recent
+  // INBOX directly is simpler and idempotent: the (profile_id, report_date)
+  // unique index plus ignoreDuplicates makes re-processing a no-op. The
+  // 1-day window catches anything missed during outages without
+  // re-scanning forever.
   const list = await gmail.users.messages.list({
     userId: "me",
     labelIds: ["INBOX"],
@@ -129,13 +125,6 @@ export async function processGmailNotification(historyId: string, profileEmail: 
   const messageIds = (list.data.messages ?? [])
     .map((m) => m.id)
     .filter((id): id is string => !!id);
-  console.log(
-    JSON.stringify({
-      tag: "gmail.notify.scan",
-      historyId,
-      messages: messageIds.length,
-    })
-  );
 
   for (const msgId of messageIds) {
     const full = await gmail.users.messages.get({
@@ -148,46 +137,20 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const from = headers.find((h) => h.name === "From")?.value || "";
     const subject = headers.find((h) => h.name === "Subject")?.value || "";
 
-    const passSender = isTriggerSender(from);
-    const passSubject = subject.includes(SUBJECT_PATTERN);
-    if (!passSender || !passSubject) {
-      console.log(
-        JSON.stringify({
-          tag: "gmail.notify.filter_header",
-          msgId,
-          from,
-          subject,
-          passSender,
-          passSubject,
-        })
-      );
-      continue;
-    }
+    if (!isTriggerSender(from) || !subject.includes(SUBJECT_PATTERN)) continue;
 
     const body = extractBody(full.data.payload);
     const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0];
     // Capture the FULL name on the greeting line, not just the last word.
     // Surense's greeting is on its own line in the format "{first} {last} שלום"
-    // (sometimes with a trailing comma). The original `(\S+)\s+שלום` regex
-    // matched only the last token (= surname), which then matched multiple
-    // household members via ilike and silently dropped the import — the
-    // single() call returns no row when there are 2+ matches.
+    // (sometimes with a trailing comma). A simpler `(\S+)\s+שלום` matches
+    // only the last token (= surname), which then matches multiple
+    // household members via ilike and silently drops the import — single()
+    // returns no row when there are 2+ matches.
     const recipientMatch = body?.match(/^(.+?)[,.\s]+שלום/m);
     const rawRecipientName = recipientMatch?.[1];
 
-    if (!surenseLink || !rawRecipientName) {
-      console.log(
-        JSON.stringify({
-          tag: "gmail.notify.filter_body",
-          msgId,
-          hasBody: body !== null,
-          bodyLength: body?.length ?? 0,
-          surenseLink: surenseLink ?? null,
-          rawRecipientName: rawRecipientName ?? null,
-        })
-      );
-      continue;
-    }
+    if (!surenseLink || !rawRecipientName) continue;
 
     const recipientName = sanitizeIlikeTerm(rawRecipientName);
     if (!recipientName) continue; // entirely wildcard chars — refuse to match
@@ -205,9 +168,8 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     // TODO (defense in depth): after the PDF page-1 extract step, compare
     // the extracted `client_name` against `recipientName`; if they don't
     // match, mark the report `failed` with error "recipient mismatch".
-    const { data: matchedProfile, error: matchErr } = await admin
-      .from("profiles")
-      .select("id, name")
+    const { data: matchedProfile } = await admin.from("profiles")
+      .select("id")
       .ilike("name", `%${recipientName}%`)
       .is("deleted_at", null)
       .single();
@@ -219,32 +181,11 @@ export async function processGmailNotification(historyId: string, profileEmail: 
         ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`
         : new Date().toISOString().slice(0, 10);
 
-      console.log(
-        JSON.stringify({
-          tag: "gmail.notify.matched",
-          msgId,
-          recipientName,
-          matchedProfileId: matchedProfile.id,
-          matchedProfileName: matchedProfile.name,
-          reportDate,
-        })
-      );
-
       reports.push({
         profileId: matchedProfile.id,
         downloadUrl: apiUrl,
         reportDate,
       });
-    } else {
-      console.log(
-        JSON.stringify({
-          tag: "gmail.notify.no_match",
-          msgId,
-          recipientName,
-          dbErrorCode: matchErr?.code ?? null,
-          dbErrorMessage: matchErr?.message ?? null,
-        })
-      );
     }
   }
 
