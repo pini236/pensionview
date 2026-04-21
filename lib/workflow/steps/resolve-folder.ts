@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decrypt } from "@/lib/crypto";
+import { FatalError } from "workflow";
 import { getGoogleOAuth2Client } from "@/lib/google-auth";
 import { resolveFolder, profileFolderName } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
@@ -29,10 +30,10 @@ export async function resolveDriveFoldersStep({
     .eq("id", reportId)
     .single();
 
-  if (!report) throw new Error(`Report ${reportId} not found`);
+  if (!report) throw new FatalError(`Report ${reportId} not found`);
 
   const ownerProfile = report.profile as Record<string, unknown> | null;
-  if (!ownerProfile) throw new Error("Report has no owner profile");
+  if (!ownerProfile) throw new FatalError("Report has no owner profile");
 
   const { data: selfProfile } = await admin
     .from("profiles")

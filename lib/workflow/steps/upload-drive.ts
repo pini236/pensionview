@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decrypt } from "@/lib/crypto";
+import { FatalError } from "workflow";
 import { getGoogleOAuth2Client } from "@/lib/google-auth";
 import { uploadPdfToFolder } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
@@ -25,14 +26,14 @@ export async function uploadDriveStep({
     .eq("id", reportId)
     .single();
 
-  if (!report) throw new Error(`Report ${reportId} not found`);
+  if (!report) throw new FatalError(`Report ${reportId} not found`);
 
   // Idempotency: skip re-upload if the file was already archived on a prior attempt.
   if (report.drive_file_id) {
     return { driveFileId: report.drive_file_id, skipped: true };
   }
 
-  if (!report.decrypted_pdf_url) throw new Error("No decrypted PDF path on report");
+  if (!report.decrypted_pdf_url) throw new FatalError("No decrypted PDF path on report");
 
   const { data: pdfData } = await admin.storage
     .from("reports")
@@ -42,7 +43,7 @@ export async function uploadDriveStep({
   // Drive credentials always come from the self profile — resolved by resolveDriveFoldersStep.
   // We need the self profile here to get the access token.
   const ownerProfile = report.profile as Record<string, unknown> | null;
-  if (!ownerProfile) throw new Error("Report has no owner profile");
+  if (!ownerProfile) throw new FatalError("Report has no owner profile");
 
   const { data: selfProfile } = await admin
     .from("profiles")
@@ -53,7 +54,7 @@ export async function uploadDriveStep({
     .maybeSingle();
 
   if (!selfProfile?.google_access_token) {
-    throw new Error("Self profile lost Google token between resolve and upload steps");
+    throw new FatalError("Self profile lost Google token between resolve and upload steps");
   }
 
   const oauth2Client = getGoogleOAuth2Client();

@@ -18,6 +18,13 @@ export async function downloadStep({ reportId }: { reportId: string }): Promise<
 
   if (!report) throw new FatalError(`Report ${reportId} not found`);
 
+  // Idempotency guard: if raw_pdf_url is already a storage path (written by a
+  // prior successful run of this step), skip the download and return early.
+  // This prevents a re-invocation from POSTing to a storage-bucket URL.
+  if (report.raw_pdf_url?.startsWith("reports/")) {
+    return { rawPdfPath: report.raw_pdf_url };
+  }
+
   const downloadUrl = report.raw_pdf_url;
   if (!downloadUrl) throw new FatalError("No download URL on report");
 

@@ -40,25 +40,21 @@ export async function decryptStep({
 
   const nationalId = decrypt(profile.national_id, encryptionKey);
 
-  let decryptedBuffer: Buffer;
-  try {
-    decryptedBuffer = await decryptPdf(encryptedBuffer, nationalId);
-  } catch (decryptError) {
-    const errorMsg = String(decryptError);
-    const isWrongPassword = errorMsg.includes("password is incorrect");
-    const isNotEncrypted =
-      !errorMsg.includes("password") && !errorMsg.includes("encrypted");
+  // Try opening the PDF without a password first to determine whether it is
+  // encrypted. If needsPassword() returns false, the buffer is plaintext and
+  // we pass an empty password so decryptPdf returns it as-is. If it returns
+  // true, we pass the national_id; a wrong password causes decryptPdf to
+  // throw with no string-matching fallback — the error propagates correctly.
+  // This avoids brittle substring checks on MuPDF error messages that may
+  // change across MuPDF versions.
+  const probe = mupdf.Document.openDocument(encryptedBuffer, "application/pdf");
+  const needsPassword = probe.needsPassword();
+  probe.destroy();
 
-    if (isWrongPassword) {
-      throw new FatalError(`PDF password incorrect for report ${reportId}: ${errorMsg}`);
-    }
-    if (isNotEncrypted) {
-      // Already plaintext — use as-is
-      decryptedBuffer = encryptedBuffer;
-    } else {
-      throw decryptError;
-    }
-  }
+  // decryptPdf calls needsPassword() internally and skips auth when false, so
+  // passing an empty string for plaintext PDFs is safe and correct.
+  const password = needsPassword ? nationalId : "";
+  const decryptedBuffer = await decryptPdf(encryptedBuffer, password);
 
   // Count pages from the decrypted PDF so the pipeline uses the real count,
   // not a hardcoded fallback. mupdf is synchronous here — no await needed.

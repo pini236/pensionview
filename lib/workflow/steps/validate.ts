@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateAndStore } from "@/lib/pipeline/validate";
+import { FatalError } from "workflow";
 import { logEvent } from "@/lib/observability";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -23,7 +24,7 @@ export async function validateStep({
     .eq("id", reportId)
     .single();
 
-  if (!report) throw new Error(`Report ${reportId} not found`);
+  if (!report) throw new FatalError(`Report ${reportId} not found`);
 
   const pages = [];
   for (let i = 1; i <= pageCount; i++) {
