@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getActiveMember } from "@/lib/active-member";
 import { ReportDetail } from "./ReportDetail";
+import { ReportProgressView } from "@/components/reports/ReportProgressView";
 
 export default async function ReportDetailPage({
   params,
@@ -37,6 +38,22 @@ export default async function ReportDetailPage({
     active.kind === "all"
       ? active.members.find((m) => m.id === report.profile_id) ?? null
       : null;
+
+  // In-flight reports render the live stepper — skip the heavy data queries.
+  if (report.status === "processing" || report.status === "failed") {
+    return (
+      <ReportProgressView
+        reportId={report.id}
+        reportDate={report.report_date}
+        ownerMember={ownerMember}
+        initialStatus={report.status}
+        initialStep={report.current_step ?? null}
+        initialDetail={
+          (report.current_step_detail as Record<string, unknown> | null) ?? null
+        }
+      />
+    );
+  }
 
   const { data: summary } = await supabase.from("report_summary")
     .select("*")
