@@ -6,6 +6,7 @@ import { MemberAvatar } from "@/components/members/MemberAvatar";
 import { getActiveMember } from "@/lib/active-member";
 import { formatCurrency } from "@/lib/format";
 import type { Member } from "@/lib/types";
+import { ReportRowActions } from "@/components/reports/ReportRowActions";
 
 export async function generateMetadata({
   searchParams,
@@ -95,33 +96,43 @@ export default async function ReportsPage({
               const total = summary?.total_savings ?? 0;
               const reportMember = membersById.get(report.profile_id) ?? null;
               return (
-                <Link
+                <div
                   key={report.id}
-                  href={`/${locale}/reports/${report.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-surface p-4 transition-colors hover:bg-surface-hover cursor-pointer"
+                  className="group flex items-center gap-2 rounded-lg bg-surface transition-colors hover:bg-surface-hover"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-text-primary">
-                      {new Date(report.report_date).toLocaleDateString(
-                        fullLocale,
-                        { month: "long", year: "numeric" }
-                      )}
-                    </p>
-                    {isCombined && reportMember && (
-                      <p className="mt-0.5 text-xs text-text-muted">
-                        {reportMember.name}
+                  <Link
+                    href={`/${locale}/reports/${report.id}`}
+                    className="flex flex-1 items-center justify-between gap-3 p-4 cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-text-primary">
+                        {new Date(report.report_date).toLocaleDateString(
+                          fullLocale,
+                          { month: "long", year: "numeric" }
+                        )}
                       </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm font-medium text-text-primary">
-                      <bdi>{formatCurrency(total, fullLocale)}</bdi>
-                    </p>
-                    {isCombined && reportMember && (
-                      <MemberAvatar member={reportMember} size="sm" />
-                    )}
-                  </div>
-                </Link>
+                      {isCombined && reportMember && (
+                        <p className="mt-0.5 text-xs text-text-muted">
+                          {reportMember.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-medium text-text-primary">
+                        <bdi>{formatCurrency(total, fullLocale)}</bdi>
+                      </p>
+                      {isCombined && reportMember && (
+                        <MemberAvatar member={reportMember} size="sm" />
+                      )}
+                    </div>
+                  </Link>
+                  <ReportRowActions
+                    reportId={report.id}
+                    reportDate={report.report_date}
+                    totalSavings={total}
+                    ownerName={isCombined ? reportMember?.name ?? null : null}
+                  />
+                </div>
               );
             })}
           </div>
