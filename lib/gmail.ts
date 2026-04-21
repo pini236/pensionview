@@ -85,12 +85,17 @@ export async function processGmailNotification(historyId: string, profileEmail: 
   const admin = createAdminClient();
   const key = process.env.ENCRYPTION_KEY!;
 
+  console.log(JSON.stringify({ tag: "gmail.notify.in", historyId, profileEmail }));
+
   const { data: profile } = await admin.from("profiles")
     .select("id, google_access_token, google_refresh_token, google_token_expiry")
     .eq("email", profileEmail)
     .single();
 
-  if (!profile?.google_access_token) return [];
+  if (!profile?.google_access_token) {
+    console.log(JSON.stringify({ tag: "gmail.notify.no_profile", profileEmail }));
+    return [];
+  }
 
   const oauth2Client = getAuthedOAuth2Client(
     {
@@ -113,6 +118,15 @@ export async function processGmailNotification(historyId: string, profileEmail: 
 
   const reports: DiscoveredReport[] = [];
   const messages = history.data.history?.flatMap((h) => h.messagesAdded || []) || [];
+  console.log(
+    JSON.stringify({
+      tag: "gmail.notify.history",
+      historyId,
+      historyRecords: history.data.history?.length ?? 0,
+      messages: messages.length,
+      newHistoryId: history.data.historyId ?? null,
+    })
+  );
 
   for (const msg of messages) {
     if (!msg.message?.id) continue;
@@ -127,7 +141,21 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const from = headers.find((h) => h.name === "From")?.value || "";
     const subject = headers.find((h) => h.name === "Subject")?.value || "";
 
-    if (!isTriggerSender(from) || !subject.includes(SUBJECT_PATTERN)) continue;
+    const passSender = isTriggerSender(from);
+    const passSubject = subject.includes(SUBJECT_PATTERN);
+    if (!passSender || !passSubject) {
+      console.log(
+        JSON.stringify({
+          tag: "gmail.notify.filter_header",
+          msgId: msg.message.id,
+          from,
+          subject,
+          passSender,
+          passSubject,
+        })
+      );
+      continue;
+    }
 
     const body = extractBody(full.data.payload);
     const surenseLink = body?.match(/https:\/\/u\.surense\.com\/\S+/)?.[0];
@@ -140,7 +168,19 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     const recipientMatch = body?.match(/^(.+?)[,.\s]+שלום/m);
     const rawRecipientName = recipientMatch?.[1];
 
-    if (!surenseLink || !rawRecipientName) continue;
+    if (!surenseLink || !rawRecipientName) {
+      console.log(
+        JSON.stringify({
+          tag: "gmail.notify.filter_body",
+          msgId: msg.message.id,
+          hasBody: body !== null,
+          bodyLength: body?.length ?? 0,
+          surenseLink: surenseLink ?? null,
+          rawRecipientName: rawRecipientName ?? null,
+        })
+      );
+      continue;
+    }
 
     const recipientName = sanitizeIlikeTerm(rawRecipientName);
     if (!recipientName) continue; // entirely wildcard chars — refuse to match
@@ -158,8 +198,9 @@ export async function processGmailNotification(historyId: string, profileEmail: 
     // TODO (defense in depth): after the PDF page-1 extract step, compare
     // the extracted `client_name` against `recipientName`; if they don't
     // match, mark the report `failed` with error "recipient mismatch".
-    const { data: matchedProfile } = await admin.from("profiles")
-      .select("id")
+    const { data: matchedProfile, error: matchErr } = await admin
+      .from("profiles")
+      .select("id, name")
       .ilike("name", `%${recipientName}%`)
       .is("deleted_at", null)
       .single();
@@ -171,11 +212,32 @@ export async function processGmailNotification(historyId: string, profileEmail: 
         ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`
         : new Date().toISOString().slice(0, 10);
 
+      console.log(
+        JSON.stringify({
+          tag: "gmail.notify.matched",
+          msgId: msg.message.id,
+          recipientName,
+          matchedProfileId: matchedProfile.id,
+          matchedProfileName: matchedProfile.name,
+          reportDate,
+        })
+      );
+
       reports.push({
         profileId: matchedProfile.id,
         downloadUrl: apiUrl,
         reportDate,
       });
+    } else {
+      console.log(
+        JSON.stringify({
+          tag: "gmail.notify.no_match",
+          msgId: msg.message.id,
+          recipientName,
+          dbErrorCode: matchErr?.code ?? null,
+          dbErrorMessage: matchErr?.message ?? null,
+        })
+      );
     }
   }
 
