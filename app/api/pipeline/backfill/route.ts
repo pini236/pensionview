@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createQueueEntries } from "@/lib/pipeline/queue";
+import { startReportPipeline } from "@/lib/workflow/start";
 
 // Hard caps (defence in depth — Vercel/Next has its own body limit too).
 const MAX_BYTES = 25_000_000; // 25 MB
@@ -158,18 +158,25 @@ export async function POST(request: NextRequest) {
 
     if (!report) throw new Error("Failed to create report");
 
-    await createQueueEntries(report.id, 10, true);
+    let runId: string;
+    let alreadyRunning: boolean;
+    try {
+      ({ runId, alreadyRunning } = await startReportPipeline({
+        reportId: report.id,
+        isBackfill: true,
+      }));
+    } catch (startError) {
+      await admin
+        .from("reports")
+        .update({ status: "failed" })
+        .eq("id", report.id);
+      return NextResponse.json(
+        { error: `Workflow start failed: ${String(startError)}` },
+        { status: 500 }
+      );
+    }
 
-    // Kick off the first pipeline step (decrypt). Forward the internal
-    // pipeline secret so assertInternalRequest() on the target route accepts
-    // the call.
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    fetch(`${APP_URL}/api/pipeline/decrypt?reportId=${report.id}&pageCount=10`, {
-      method: "POST",
-      headers: { "x-pipeline-secret": process.env.PIPELINE_INTERNAL_SECRET ?? "" },
-    }).catch(() => {});
-
-    return NextResponse.json({ ok: true, reportId: report.id, reportDate });
+    return NextResponse.json({ ok: true, reportId: report.id, reportDate, runId, alreadyRunning });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }

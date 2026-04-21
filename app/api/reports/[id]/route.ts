@@ -144,6 +144,64 @@ interface DeleteResponseBody {
   driveUrl?: string;
 }
 
+// ---------------------------------------------------------------------------
+// GET /api/reports/[id]
+//
+// Tiny status-poll endpoint used by the in-flight report row in the reports
+// list. Returns just the workflow-progress columns (status / current_step /
+// current_step_detail) plus the report_date for display. RLS isn't engaged
+// here — we use the admin client so we can keep the SELECT minimal — but
+// ownership is enforced the same way as DELETE: the caller must own a
+// profile in the same household as the report's owning profile.
+// ---------------------------------------------------------------------------
+
+interface ReportStatusResponse {
+  id: string;
+  status: string;
+  current_step: string | null;
+  current_step_detail: Record<string, unknown> | null;
+  report_date: string;
+}
+
+export async function GET(
+  _request: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  const { id } = await ctx.params;
+
+  const auth = await getCallerContext();
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const admin = createAdminClient();
+  const householdMemberIds = await getHouseholdMemberIds(
+    admin,
+    auth.ctx.householdId
+  );
+
+  const { data } = await admin
+    .from("reports")
+    .select("id, status, current_step, current_step_detail, report_date")
+    .eq("id", id)
+    .in("profile_id", householdMemberIds)
+    .maybeSingle();
+
+  if (!data) {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+
+  const body: ReportStatusResponse = {
+    id: data.id as string,
+    status: data.status as string,
+    current_step: (data.current_step as string | null) ?? null,
+    current_step_detail:
+      (data.current_step_detail as Record<string, unknown> | null) ?? null,
+    report_date: data.report_date as string,
+  };
+  return NextResponse.json(body, { status: 200 });
+}
+
 export async function DELETE(
   _request: NextRequest,
   ctx: { params: Promise<{ id: string }> }

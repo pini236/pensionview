@@ -63,6 +63,23 @@
       "openInDrive": "פתח ב-Drive",
       "done": "סיום",
       "errorGeneric": "לא ניתן היה למחוק את הדוח. נסה שוב."
+    },
+    "processing": {
+      "title": "בעיבוד",
+      "failed_title": "נכשל",
+      "polling": "מעבד...",
+      "failed_default": "העיבוד נכשל.",
+      "failed_with_reason": "העיבוד נכשל: {reason}",
+      "steps": {
+        "download": "מוריד את הקובץ",
+        "decrypt": "מפענח את הקובץ",
+        "resolve_drive_folder": "מכין את גוגל דרייב",
+        "upload_drive": "שומר בגוגל דרייב",
+        "extract_page": "מחלץ עמוד {page} מתוך {total}",
+        "validate": "מאמת נתונים",
+        "generate_insight": "מפיק תובנות",
+        "complete": "מסיים"
+      }
     }
   },
   "common": {

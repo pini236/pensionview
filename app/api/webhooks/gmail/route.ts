@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
 import { processGmailNotification } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createQueueEntries, triggerNextStep } from "@/lib/pipeline/queue";
+import { startReportPipeline } from "@/lib/workflow/start";
+import { logEvent } from "@/lib/observability";
 
 // ---------------------------------------------------------------------------
 // Pub/Sub OIDC verification
@@ -75,8 +76,19 @@ export async function POST(request: NextRequest) {
       }
       if (!report) continue; // duplicate — already inserted on a prior delivery
 
-      await createQueueEntries(report.id, 10);
-      await triggerNextStep(report.id, "", 10);
+      try {
+        await startReportPipeline({ reportId: report.id, isBackfill: false });
+      } catch (startError) {
+        logEvent("pipeline.start_failed", {
+          feature: "pipeline",
+          reportId: report.id,
+          error: startError,
+        });
+        await admin
+          .from("reports")
+          .update({ status: "failed" })
+          .eq("id", report.id);
+      }
     }
 
     return NextResponse.json({ ok: true, processed: reports.length });

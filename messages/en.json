@@ -63,6 +63,23 @@
       "openInDrive": "Open in Drive",
       "done": "Done",
       "errorGeneric": "Could not delete report. Please try again."
+    },
+    "processing": {
+      "title": "Processing",
+      "failed_title": "Failed",
+      "polling": "Working...",
+      "failed_default": "Processing failed.",
+      "failed_with_reason": "Processing failed: {reason}",
+      "steps": {
+        "download": "Downloading PDF",
+        "decrypt": "Decrypting PDF",
+        "resolve_drive_folder": "Setting up Google Drive",
+        "upload_drive": "Saving to Google Drive",
+        "extract_page": "Extracting page {page} of {total}",
+        "validate": "Validating extracted data",
+        "generate_insight": "Generating insights",
+        "complete": "Finalizing"
+      }
     }
   },
   "common": {
