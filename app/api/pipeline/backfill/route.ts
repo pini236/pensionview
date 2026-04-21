@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -8,8 +9,9 @@ const MAX_BYTES = 25_000_000; // 25 MB
 const PDF_MAGIC = "%PDF-";
 
 // Accepts either filename-derived MM-YYYY or an explicit `reportDate` form
-// field (YYYY-MM-DD). The explicit field always wins so the user can
-// override an ambiguous filename.
+// field (YYYY-MM-DD). The explicit field always wins. Returns null when no
+// date can be inferred — the workflow's validate step will then pull the
+// date out of the PDF's cover page.
 function parseReportDate(
   explicit: string | null,
   fileName: string
@@ -119,37 +121,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ---------- Report date: explicit field wins, else filename ----------
+    // ---------- Report date: best-effort (may be null) -------------------
+    // Missing dates are no longer fatal — validate step will pull the date
+    // out of the PDF's cover page. Early dup check only runs when we have a
+    // date in hand; otherwise dup detection is deferred to validate.
     const reportDate = parseReportDate(explicitDate, file.name);
-    if (!reportDate) {
-      return NextResponse.json(
-        {
-          error:
-            "Could not determine report date. Provide `reportDate` (YYYY-MM-DD) or use a filename containing MM-YYYY.",
-        },
-        { status: 400 }
-      );
-    }
 
-    // ---------- Duplicate check ------------------------------------------
-    const { data: existing } = await admin.from("reports")
-      .select("id")
-      .eq("profile_id", profileId)
-      .eq("report_date", reportDate)
-      .maybeSingle();
+    if (reportDate) {
+      const { data: existing } = await admin
+        .from("reports")
+        .select("id")
+        .eq("profile_id", profileId)
+        .eq("report_date", reportDate)
+        .maybeSingle();
 
-    if (existing) {
-      return NextResponse.json({ error: "Report already exists for this date" }, { status: 409 });
+      if (existing) {
+        return NextResponse.json(
+          { error: "Report already exists for this date" },
+          { status: 409 }
+        );
+      }
     }
 
     // ---------- Store + enqueue ------------------------------------------
-    const decryptedPath = `reports/${profileId}/${reportDate}/decrypted.pdf`;
+    // Storage paths are keyed by reportId so we can write the file before we
+    // know the date. Old reports (date-keyed paths) keep their stored URLs
+    // and remain reachable; new reports use the reportId-keyed layout.
+    const reportId = randomUUID();
+    const decryptedPath = `reports/${profileId}/${reportId}/decrypted.pdf`;
     await admin.storage.from("reports").upload(decryptedPath, buffer, {
       contentType: "application/pdf",
       upsert: true,
     });
 
     const { data: report } = await admin.from("reports").insert({
+      id: reportId,
       profile_id: profileId,
       report_date: reportDate,
       status: "processing",

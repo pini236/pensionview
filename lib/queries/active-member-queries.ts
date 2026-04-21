@@ -101,6 +101,11 @@ export async function queryReportsForActiveMember(
     .select("id, profile_id, report_date, status")
     .in("profile_id", ids)
     .eq("status", opts.status ?? "done")
+    // Skip reports whose date hasn't been resolved yet (extraction couldn't
+    // surface one and the user hasn't patched it in). Postgres sorts NULLs
+    // first on DESC by default, which would otherwise push degenerate rows
+    // ahead of real data in every "latest report" caller.
+    .not("report_date", "is", null)
     .order("report_date", { ascending: false })
     .limit(opts.limit ?? 100);
 

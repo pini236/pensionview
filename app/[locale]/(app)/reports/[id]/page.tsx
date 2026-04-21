@@ -70,26 +70,29 @@ export default async function ReportDetailPage({
     .eq("report_id", id);
 
   // Look up the previous report (by date) for the same profile so the hero
-  // can render an inline "+X deposits, +Y market" line. When this is the
-  // first report for the profile, leave both null and the UI hides the line.
-  const { data: previousReport } = await supabase
-    .from("reports")
-    .select("id, report_date")
-    .eq("profile_id", report.profile_id)
-    .eq("status", "done")
-    .lt("report_date", report.report_date)
-    .order("report_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
+  // can render an inline "+X deposits, +Y market" line. Skip the lookup
+  // when the current report has no date yet — the comparison wouldn't be
+  // meaningful and `lt(report_date, null)` returns nothing anyway.
   let previousTotalSavings: number | null = null;
-  if (previousReport) {
-    const { data: prevSummary } = await supabase
-      .from("report_summary")
-      .select("total_savings")
-      .eq("report_id", previousReport.id)
+  if (report.report_date) {
+    const { data: previousReport } = await supabase
+      .from("reports")
+      .select("id, report_date")
+      .eq("profile_id", report.profile_id)
+      .eq("status", "done")
+      .lt("report_date", report.report_date)
+      .order("report_date", { ascending: false })
+      .limit(1)
       .maybeSingle();
-    previousTotalSavings = prevSummary?.total_savings ?? null;
+
+    if (previousReport) {
+      const { data: prevSummary } = await supabase
+        .from("report_summary")
+        .select("total_savings")
+        .eq("report_id", previousReport.id)
+        .maybeSingle();
+      previousTotalSavings = prevSummary?.total_savings ?? null;
+    }
   }
 
   return (

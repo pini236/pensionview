@@ -48,7 +48,7 @@ interface ReportProcessingRowReport {
   status: string;
   current_step: string | null;
   current_step_detail: Record<string, unknown> | null;
-  report_date: string;
+  report_date: string | null;
   created_at: string;
 }
 
@@ -116,10 +116,13 @@ export function ReportProcessingRow({ report }: ReportProcessingRowProps) {
     }
   }
 
-  const dateLabel = new Date(report.report_date).toLocaleDateString(
-    fullLocale,
-    { month: "long", year: "numeric" }
-  );
+  // Date may be null until the validate step extracts it from the PDF cover.
+  const dateLabel = report.report_date
+    ? new Date(report.report_date).toLocaleDateString(fullLocale, {
+        month: "long",
+        year: "numeric",
+      })
+    : t("date_pending");
 
   const isFailed = state.status === "failed";
 

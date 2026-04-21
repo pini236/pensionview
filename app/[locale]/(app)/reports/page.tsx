@@ -68,8 +68,13 @@ export default async function ReportsPage({
   const inFlight = allReports.filter(
     (r) => r.status === "processing" || r.status === "failed"
   );
-  const doneReports = allReports
-    .filter((r) => r.status === "done")
+  // Done reports without a date (extraction surfaced none AND user hasn't
+  // patched one in) get their own group at the top so they're discoverable
+  // and easy to triage with the manual-edit affordance.
+  const doneReports = allReports.filter((r) => r.status === "done");
+  const undatedDone = doneReports.filter((r) => !r.report_date);
+  const datedDone = doneReports
+    .filter((r): r is typeof r & { report_date: string } => !!r.report_date)
     // Year grouping below sorts by report_date, not created_at, so resort.
     .sort(
       (a, b) =>
@@ -77,14 +82,14 @@ export default async function ReportsPage({
     );
 
   // Group completed reports by year
-  const grouped = doneReports.reduce(
+  const grouped = datedDone.reduce(
     (acc, report) => {
       const year = new Date(report.report_date).getFullYear();
       if (!acc[year]) acc[year] = [];
       acc[year].push(report);
       return acc;
     },
-    {} as Record<number, typeof doneReports>
+    {} as Record<number, typeof datedDone>
   );
 
   const years = Object.keys(grouped).map(Number).sort((a, b) => b - a);
@@ -95,7 +100,10 @@ export default async function ReportsPage({
   );
   const isCombined = active.kind === "all";
 
-  const hasAnyReports = years.length > 0 || inFlight.length > 0;
+  const hasAnyReports =
+    years.length > 0 || inFlight.length > 0 || undatedDone.length > 0;
+  const datePendingLabel =
+    locale === "he" ? "תאריך בעיבוד" : "Date pending";
 
   return (
     <ReportsUploadProvider>
@@ -157,6 +165,62 @@ export default async function ReportsPage({
       )}
 
         {!hasAnyReports && <ReportUploadEmptyState />}
+      {undatedDone.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-text-muted">
+            {datePendingLabel}
+          </h2>
+          <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2 lg:space-y-0">
+            {undatedDone.map((report) => {
+              const summaryRaw = report.report_summary as
+                | { total_savings: number | null }
+                | { total_savings: number | null }[]
+                | null;
+              const summary = Array.isArray(summaryRaw)
+                ? summaryRaw[0]
+                : summaryRaw;
+              const total = summary?.total_savings ?? 0;
+              const reportMember = membersById.get(report.profile_id) ?? null;
+              return (
+                <div
+                  key={report.id}
+                  className="group flex items-center gap-2 rounded-lg bg-surface transition-colors hover:bg-surface-hover"
+                >
+                  <Link
+                    href={`/${locale}/reports/${report.id}`}
+                    className="flex flex-1 items-center justify-between gap-3 p-4 cursor-pointer"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-text-primary">
+                        {datePendingLabel}
+                      </p>
+                      {isCombined && reportMember && (
+                        <p className="mt-0.5 text-xs text-text-muted">
+                          {reportMember.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-medium text-text-primary">
+                        <bdi>{formatCurrency(total, fullLocale)}</bdi>
+                      </p>
+                      {isCombined && reportMember && (
+                        <MemberAvatar member={reportMember} size="sm" />
+                      )}
+                    </div>
+                  </Link>
+                  <ReportRowActions
+                    reportId={report.id}
+                    reportDate={report.report_date}
+                    totalSavings={total}
+                    ownerName={isCombined ? reportMember?.name ?? null : null}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
       {years.map((year) => (
         <section key={year}>
           <h2 className="mb-3 text-sm font-medium text-text-muted">{year}</h2>

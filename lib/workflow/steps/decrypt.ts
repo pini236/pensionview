@@ -62,7 +62,12 @@ export async function decryptStep({
   const pageCount = doc.countPages();
   doc.destroy();
 
-  const decryptedPath = `reports/${report.profile_id}/${report.report_date}/decrypted.pdf`;
+  // Decrypted output lives next to the source. Derived from the source path
+  // so we transparently support both the legacy date-keyed layout (old rows)
+  // and the new reportId-keyed layout (post-migration uploads). Backfill
+  // sources are already at this exact path → upload is a noop overwrite.
+  const sourceDir = sourcePath.replace(/\/[^/]+$/, "");
+  const decryptedPath = `${sourceDir}/decrypted.pdf`;
   await admin.storage.from("reports").upload(decryptedPath, decryptedBuffer, {
     contentType: "application/pdf",
     upsert: true,

@@ -78,12 +78,22 @@ function setHouseholdMembers() {
   });
 }
 
-function setReport(opts: { drive_file_id?: string | null } = {}) {
+function setReport(
+  opts: {
+    drive_file_id?: string | null;
+    decrypted_pdf_url?: string | null;
+    raw_pdf_url?: string | null;
+  } = {}
+) {
   return makeQuery({
     data: {
       id: REPORT_ID,
       profile_id: PROFILE_ID,
       report_date: "2026-04-01",
+      raw_pdf_url: opts.raw_pdf_url ?? null,
+      decrypted_pdf_url:
+        opts.decrypted_pdf_url ??
+        `reports/${PROFILE_ID}/2026-04-01/decrypted.pdf`,
       drive_file_id: opts.drive_file_id ?? "drive-1",
       profile: {
         google_access_token: "tok",
@@ -153,6 +163,30 @@ describe("DELETE /api/reports/[id]", () => {
       `${PROFILE_ID}/extractions/${REPORT_ID}/page_1.json`,
     ]);
     expect(deleteQ.delete).toHaveBeenCalled();
+  });
+
+  it("derives prefix from decrypted_pdf_url for reportId-keyed layout", async () => {
+    setAuthedUser();
+    deleteDriveFile.mockResolvedValue({ kind: "deleted" });
+    storageList
+      .mockResolvedValueOnce({ data: [{ name: "decrypted.pdf" }], error: null })
+      .mockResolvedValueOnce({ data: [{ name: "page_1.json" }], error: null });
+    adminFrom
+      .mockReturnValueOnce(setSelfProfile())
+      .mockReturnValueOnce(setHouseholdMembers())
+      .mockReturnValueOnce(
+        setReport({
+          decrypted_pdf_url: `reports/${PROFILE_ID}/${REPORT_ID}/decrypted.pdf`,
+        })
+      )
+      .mockReturnValueOnce(setDeleteOk());
+
+    const res = await DELETE(makeReq(), { params: Promise.resolve({ id: REPORT_ID }) });
+    expect(res.status).toBe(200);
+    expect(storageRemove).toHaveBeenCalledWith([
+      `${PROFILE_ID}/${REPORT_ID}/decrypted.pdf`,
+      `${PROFILE_ID}/extractions/${REPORT_ID}/page_1.json`,
+    ]);
   });
 
   it("returns drive: failed with driveUrl when Drive deletion fails", async () => {
