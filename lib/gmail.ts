@@ -110,30 +110,37 @@ export async function processGmailNotification(historyId: string, profileEmail: 
 
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-  const history = await gmail.users.history.list({
+  // Originally this used gmail.users.history.list({ startHistoryId }) but
+  // Gmail's "after the specified startHistoryId" semantics means passing
+  // the notification's historyId returns ZERO records (the change IS at
+  // that historyId, not after). Doing it correctly would require tracking
+  // a per-profile last-seen historyId. Instead we just scan recent INBOX
+  // messages directly and let the (profile_id, report_date) unique index
+  // dedupe — same end result, no state to maintain. Window is 1 day so we
+  // catch anything missed during outages without re-scanning forever.
+  const list = await gmail.users.messages.list({
     userId: "me",
-    startHistoryId: historyId,
-    historyTypes: ["messageAdded"],
+    labelIds: ["INBOX"],
+    q: "newer_than:1d",
+    maxResults: 20,
   });
 
   const reports: DiscoveredReport[] = [];
-  const messages = history.data.history?.flatMap((h) => h.messagesAdded || []) || [];
+  const messageIds = (list.data.messages ?? [])
+    .map((m) => m.id)
+    .filter((id): id is string => !!id);
   console.log(
     JSON.stringify({
-      tag: "gmail.notify.history",
+      tag: "gmail.notify.scan",
       historyId,
-      historyRecords: history.data.history?.length ?? 0,
-      messages: messages.length,
-      newHistoryId: history.data.historyId ?? null,
+      messages: messageIds.length,
     })
   );
 
-  for (const msg of messages) {
-    if (!msg.message?.id) continue;
-
+  for (const msgId of messageIds) {
     const full = await gmail.users.messages.get({
       userId: "me",
-      id: msg.message.id,
+      id: msgId,
       format: "full",
     });
 
@@ -147,7 +154,7 @@ export async function processGmailNotification(historyId: string, profileEmail: 
       console.log(
         JSON.stringify({
           tag: "gmail.notify.filter_header",
-          msgId: msg.message.id,
+          msgId,
           from,
           subject,
           passSender,
@@ -172,7 +179,7 @@ export async function processGmailNotification(historyId: string, profileEmail: 
       console.log(
         JSON.stringify({
           tag: "gmail.notify.filter_body",
-          msgId: msg.message.id,
+          msgId,
           hasBody: body !== null,
           bodyLength: body?.length ?? 0,
           surenseLink: surenseLink ?? null,
@@ -215,7 +222,7 @@ export async function processGmailNotification(historyId: string, profileEmail: 
       console.log(
         JSON.stringify({
           tag: "gmail.notify.matched",
-          msgId: msg.message.id,
+          msgId,
           recipientName,
           matchedProfileId: matchedProfile.id,
           matchedProfileName: matchedProfile.name,
@@ -232,7 +239,7 @@ export async function processGmailNotification(historyId: string, profileEmail: 
       console.log(
         JSON.stringify({
           tag: "gmail.notify.no_match",
-          msgId: msg.message.id,
+          msgId,
           recipientName,
           dbErrorCode: matchErr?.code ?? null,
           dbErrorMessage: matchErr?.message ?? null,
