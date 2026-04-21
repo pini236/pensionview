@@ -12,9 +12,26 @@ import {
 } from "@/components/trends/ReturnsTable";
 import { LongTermPlaceholder } from "@/components/trends/LongTermPlaceholder";
 import { MemberAvatar } from "@/components/members/MemberAvatar";
+import { CashflowAggregateCard } from "@/components/cards/CashflowAggregateCard";
+import { CashflowStackedChart } from "@/components/charts/CashflowStackedChart";
 import { getActiveMember } from "@/lib/active-member";
 import { formatCurrency } from "@/lib/format";
+import {
+  computeAggregateCashflow,
+  computeMonthlyCashflow,
+  type ReportSnapshot,
+} from "@/lib/cashflow";
 import type { Member, ProductType } from "@/lib/types";
+
+function buildCashflowEmpty(locale: string) {
+  return locale === "he"
+    ? "העלה לפחות 2 דוחות כדי להציג הפקדות מול שוק לאורך זמן"
+    : "Upload at least 2 reports to see deposits vs market over time";
+}
+
+function buildCashflowSectionTitle(locale: string) {
+  return locale === "he" ? "הפקדות מול שוק" : "Deposits vs Market";
+}
 
 export async function generateMetadata({
   searchParams,
@@ -214,6 +231,32 @@ async function SingleMemberTrends({
   const insightLabel =
     locale === "he" ? "תובנה מהדוח האחרון" : "Insight from latest report";
 
+  // Cashflow timeline — full history for this member.
+  const { data: cashflowReports } = await supabase
+    .from("reports")
+    .select("id, report_date, report_summary(total_savings, monthly_deposits)")
+    .eq("profile_id", member.id)
+    .eq("status", "done")
+    .order("report_date", { ascending: true });
+
+  const cashflowSnapshots: ReportSnapshot[] = (cashflowReports ?? [])
+    .map((r) => {
+      const raw = r.report_summary as
+        | { total_savings: number | null; monthly_deposits: number | null }
+        | { total_savings: number | null; monthly_deposits: number | null }[]
+        | null;
+      const s = Array.isArray(raw) ? raw[0] : raw;
+      return {
+        reportId: r.id as string,
+        reportDate: r.report_date as string,
+        totalSavings: Number(s?.total_savings ?? 0),
+        monthlyDeposits: Number(s?.monthly_deposits ?? 0),
+      };
+    })
+    .filter((s) => s.totalSavings > 0 || s.monthlyDeposits > 0);
+  const cashflowMonthly = computeMonthlyCashflow(cashflowSnapshots);
+  const cashflowAggregate = computeAggregateCashflow(cashflowSnapshots);
+
   return (
     <div className="space-y-6">
       <p className="text-xs uppercase tracking-wide text-text-muted">
@@ -251,6 +294,22 @@ async function SingleMemberTrends({
       ) : (
         <LongTermPlaceholder reportsCount={reportsCount} />
       )}
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium text-text-primary">
+          {buildCashflowSectionTitle(locale)}
+        </h2>
+        {cashflowMonthly.length >= 2 && cashflowAggregate ? (
+          <>
+            <CashflowAggregateCard aggregate={cashflowAggregate} />
+            <CashflowStackedChart rows={cashflowMonthly} />
+          </>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-surface-hover p-8 text-center text-text-muted">
+            {buildCashflowEmpty(locale)}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -410,6 +469,64 @@ async function CombinedTrends({
   // Sort by current balance desc
   fundChanges.sort((a, b) => b.fund.currentBalance - a.fund.currentBalance);
 
+  // -------------------------------------------------------------------------
+  // Household cashflow timeline — full history across the household, bucketed
+  // by calendar month. See dashboard CombinedDashboard for the rationale.
+  // -------------------------------------------------------------------------
+  const { data: hhCashflowReports } = await supabase
+    .from("reports")
+    .select("id, profile_id, report_date, report_summary(total_savings, monthly_deposits)")
+    .in("profile_id", memberIds)
+    .eq("status", "done")
+    .order("report_date", { ascending: true });
+
+  type HhRow = {
+    profileId: string;
+    monthKey: string;
+    reportDate: string;
+    total: number;
+    deposits: number;
+  };
+  const hhRows: HhRow[] = (hhCashflowReports ?? []).map((r) => {
+    const raw = r.report_summary as
+      | { total_savings: number | null; monthly_deposits: number | null }
+      | { total_savings: number | null; monthly_deposits: number | null }[]
+      | null;
+    const s = Array.isArray(raw) ? raw[0] : raw;
+    const d = new Date(r.report_date as string);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      profileId: r.profile_id as string,
+      monthKey,
+      reportDate: r.report_date as string,
+      total: Number(s?.total_savings ?? 0),
+      deposits: Number(s?.monthly_deposits ?? 0),
+    };
+  });
+  const hhMonthKeys = Array.from(new Set(hhRows.map((r) => r.monthKey))).sort();
+  const hhSnapshots: ReportSnapshot[] = hhMonthKeys
+    .map((monthKey) => {
+      const monthRows = hhRows.filter((r) => r.monthKey === monthKey);
+      const monthDeposits = monthRows.reduce((sum, r) => sum + r.deposits, 0);
+      let monthTotal = 0;
+      for (const memberId of memberIds) {
+        const candidate = hhRows
+          .filter((r) => r.profileId === memberId && r.monthKey <= monthKey)
+          .sort((a, b) => b.reportDate.localeCompare(a.reportDate))[0];
+        if (candidate) monthTotal += candidate.total;
+      }
+      const [y, m] = monthKey.split("-").map(Number);
+      return {
+        reportId: `month:${monthKey}`,
+        reportDate: `${y}-${String(m).padStart(2, "0")}-01`,
+        totalSavings: monthTotal,
+        monthlyDeposits: monthDeposits,
+      };
+    })
+    .filter((s) => s.totalSavings > 0 || s.monthlyDeposits > 0);
+  const hhCashflowMonthly = computeMonthlyCashflow(hhSnapshots);
+  const hhCashflowAggregate = computeAggregateCashflow(hhSnapshots);
+
   return (
     <div className="space-y-6">
       <p className="text-xs uppercase tracking-wide text-text-muted">
@@ -482,6 +599,22 @@ async function CombinedTrends({
           ))}
         </div>
       )}
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium text-text-primary">
+          {buildCashflowSectionTitle(locale)}
+        </h2>
+        {hhCashflowMonthly.length >= 2 && hhCashflowAggregate ? (
+          <>
+            <CashflowAggregateCard aggregate={hhCashflowAggregate} />
+            <CashflowStackedChart rows={hhCashflowMonthly} />
+          </>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-surface-hover p-8 text-center text-text-muted">
+            {buildCashflowEmpty(locale)}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

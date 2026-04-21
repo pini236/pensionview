@@ -12,12 +12,14 @@ import { RetirementGoalCard } from "@/components/insights/RetirementGoalCard";
 import { HouseholdHero } from "@/components/members/HouseholdHero";
 import type { ShareSegment } from "@/components/members/MemberShareBar";
 import { NoReportsState } from "@/components/empty-states/NoReportsState";
+import { CashflowCard } from "@/components/cards/CashflowCard";
 import { getActiveMember } from "@/lib/active-member";
 import {
   detectDepositAlerts,
   groupFundHistories,
 } from "@/lib/insights/deposit-alerts";
 import { analyzeFees } from "@/lib/insights/fee-analyzer";
+import { computeMonthlyCashflow, type ReportSnapshot } from "@/lib/cashflow";
 import type { Member, ProductType, SavingsProduct } from "@/lib/types";
 
 export async function generateMetadata({
@@ -156,6 +158,35 @@ async function SingleMemberDashboard({
     .maybeSingle();
 
   // -------------------------------------------------------------------------
+  // Cashflow timeline — last 7 reports for this member with their summaries.
+  // Used by <CashflowCard> below the hero.
+  // -------------------------------------------------------------------------
+  const { data: cashflowReports } = await supabase
+    .from("reports")
+    .select("id, report_date, report_summary(total_savings, monthly_deposits)")
+    .eq("profile_id", profile.id)
+    .eq("status", "done")
+    .order("report_date", { ascending: false })
+    .limit(7);
+
+  const cashflowSnapshots: ReportSnapshot[] = (cashflowReports ?? [])
+    .map((r) => {
+      const raw = r.report_summary as
+        | { total_savings: number | null; monthly_deposits: number | null }
+        | { total_savings: number | null; monthly_deposits: number | null }[]
+        | null;
+      const s = Array.isArray(raw) ? raw[0] : raw;
+      return {
+        reportId: r.id as string,
+        reportDate: r.report_date as string,
+        totalSavings: Number(s?.total_savings ?? 0),
+        monthlyDeposits: Number(s?.monthly_deposits ?? 0),
+      };
+    })
+    .filter((s) => s.totalSavings > 0 || s.monthlyDeposits > 0);
+  const cashflowRows = computeMonthlyCashflow(cashflowSnapshots);
+
+  // -------------------------------------------------------------------------
   // Sparkline data prep — last 6 reports, build per-fund balance history.
   // Self-contained block so it doesn't conflict with parallel features.
   // -------------------------------------------------------------------------
@@ -245,6 +276,12 @@ async function SingleMemberDashboard({
       {insight && (
         <div className="min-w-0 lg:col-span-4 xl:col-span-5">
           <InsightCard text={insight.summary_text} label={monthlyInsightLabel} />
+        </div>
+      )}
+
+      {cashflowRows.length > 0 && (
+        <div className="min-w-0 lg:col-span-12">
+          <CashflowCard rows={cashflowRows} />
         </div>
       )}
 
@@ -354,6 +391,75 @@ async function CombinedDashboard({
       supabase.from("savings_products").select("*").in("report_id", latestReportIds).order("balance", { ascending: false }),
       supabase.from("report_insights").select("*").in("report_id", latestReportIds),
     ]);
+
+  // -------------------------------------------------------------------------
+  // Household cashflow timeline — last 7 calendar months. For each month we
+  // sum (a) deposits across every member's report in that month and (b) the
+  // total_savings using each member's latest snapshot ≤ that month, so the
+  // balance series is monotonic and reflects total household value at a
+  // point in time even when members report at slightly different cadences.
+  // -------------------------------------------------------------------------
+  const { data: householdCashflowReports } = await supabase
+    .from("reports")
+    .select("id, profile_id, report_date, report_summary(total_savings, monthly_deposits)")
+    .in("profile_id", memberIds)
+    .eq("status", "done")
+    .order("report_date", { ascending: false })
+    .limit(memberIds.length * 12); // generous cap to cover ~12 months across the household
+
+  type HhRow = {
+    profileId: string;
+    monthKey: string;
+    reportDate: string;
+    total: number;
+    deposits: number;
+  };
+
+  const hhRows: HhRow[] = (householdCashflowReports ?? []).map((r) => {
+    const raw = r.report_summary as
+      | { total_savings: number | null; monthly_deposits: number | null }
+      | { total_savings: number | null; monthly_deposits: number | null }[]
+      | null;
+    const s = Array.isArray(raw) ? raw[0] : raw;
+    const d = new Date(r.report_date as string);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return {
+      profileId: r.profile_id as string,
+      monthKey,
+      reportDate: r.report_date as string,
+      total: Number(s?.total_savings ?? 0),
+      deposits: Number(s?.monthly_deposits ?? 0),
+    };
+  });
+
+  const monthKeys = Array.from(new Set(hhRows.map((r) => r.monthKey))).sort();
+  const recentMonthKeys = monthKeys.slice(-7);
+
+  const householdCashflowSnapshots: ReportSnapshot[] = recentMonthKeys
+    .map((monthKey) => {
+      // Per-month deposits: sum of every member's report in that month.
+      const monthRows = hhRows.filter((r) => r.monthKey === monthKey);
+      const monthDeposits = monthRows.reduce((sum, r) => sum + r.deposits, 0);
+      // Per-month total: sum of each member's latest snapshot ≤ this month.
+      let monthTotal = 0;
+      for (const memberId of memberIds) {
+        const candidate = hhRows
+          .filter((r) => r.profileId === memberId && r.monthKey <= monthKey)
+          .sort((a, b) => b.reportDate.localeCompare(a.reportDate))[0];
+        if (candidate) monthTotal += candidate.total;
+      }
+      // Use the last day of the month as the canonical date for sparkbar order.
+      const [y, m] = monthKey.split("-").map(Number);
+      const isoDate = `${y}-${String(m).padStart(2, "0")}-01`;
+      return {
+        reportId: `month:${monthKey}`,
+        reportDate: isoDate,
+        totalSavings: monthTotal,
+        monthlyDeposits: monthDeposits,
+      };
+    })
+    .filter((s) => s.totalSavings > 0 || s.monthlyDeposits > 0);
+  const householdCashflowRows = computeMonthlyCashflow(householdCashflowSnapshots);
 
   // Map report_id -> profile_id for joining
   const reportToProfile = new Map<string, string>();
@@ -573,6 +679,12 @@ async function CombinedDashboard({
             text={insight.summary_text}
             label={selfMember ? `${selfMember.name} · ${monthlyInsightLabel}` : monthlyInsightLabel}
           />
+        </div>
+      )}
+
+      {householdCashflowRows.length > 0 && (
+        <div className="min-w-0 lg:col-span-12">
+          <CashflowCard rows={householdCashflowRows} />
         </div>
       )}
 

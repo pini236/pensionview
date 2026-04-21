@@ -19,7 +19,15 @@
     "disability": "Disability Coverage",
     "active": "Active",
     "inactive": "Inactive",
-    "totalBalance": "Total balance"
+    "totalBalance": "Total balance",
+    "cashflow": {
+      "title": "Cashflow",
+      "deposits_this_month": "Deposited this month",
+      "market_this_month": "Market this month",
+      "market_pct": "{value}%",
+      "needs_previous": "Need a previous report to compare market changes",
+      "first_report": "First report — comparison from next month"
+    }
   },
   "trends": {
     "portfolioGrowth": "Portfolio Growth",
@@ -29,7 +37,16 @@
     "yearly": "Yearly",
     "threeYear": "36 Months",
     "fiveYear": "60 Months",
-    "depositsBreakdown": "Deposit Breakdown"
+    "depositsBreakdown": "Deposit Breakdown",
+    "cashflow_section": {
+      "title": "Deposits vs Market",
+      "aggregate_title": "Over {months} months",
+      "aggregate_deposits": "{amount} deposited",
+      "aggregate_market": "{amount} from market ({pct}%)",
+      "range": "From {start} to {end}",
+      "empty": "Upload at least 2 reports to see deposits vs market over time",
+      "tooltip": "Deposited {deposits} + Market {market} = Total Δ {total}"
+    }
   },
   "reports": {
     "title": "Reports",
@@ -50,6 +67,9 @@
       "yearly": "Yearly",
       "threeYear": "36mo",
       "fiveYear": "60mo"
+    },
+    "detail": {
+      "deposits_market_inline": "+{deposits} deposits, {market_sign}{market} market"
     },
     "delete": {
       "trigger": "Delete report",

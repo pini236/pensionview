@@ -24,6 +24,12 @@ interface ReportDetailProps {
   savings: SavingsProduct[];
   insurance: InsuranceWithCoverages[];
   ownerMember?: Member | null;
+  /**
+   * Total savings of the previous report (by date) for the same profile.
+   * Null when this is the user's first report — the inline deposits/market
+   * line is then hidden.
+   */
+  previousTotalSavings?: number | null;
 }
 
 export function ReportDetail({
@@ -34,6 +40,7 @@ export function ReportDetail({
   savings,
   insurance,
   ownerMember,
+  previousTotalSavings,
 }: ReportDetailProps) {
   const fullLocale = locale === "he" ? "he-IL" : "en-IL";
   const [tab, setTab] = useState<Tab>("balances");
@@ -42,6 +49,20 @@ export function ReportDetail({
   const t = useTranslations("reports");
 
   const dateLabel = new Date(reportDate).toLocaleDateString(fullLocale, { month: "long", year: "numeric" });
+
+  const totalSavings = summary?.total_savings ?? 0;
+  const deposits = summary?.monthly_deposits ?? 0;
+  const hasPrevious =
+    previousTotalSavings !== null && previousTotalSavings !== undefined;
+  const market = hasPrevious ? totalSavings - previousTotalSavings - deposits : null;
+  const marketSign = market !== null ? (market >= 0 ? "+" : "-") : "";
+  const depositsLabel = formatCurrency(deposits, fullLocale);
+  const marketLabel = market !== null ? formatCurrency(Math.abs(market), fullLocale) : "";
+  const inlineText = t("detail.deposits_market_inline", {
+    deposits: depositsLabel,
+    market_sign: marketSign,
+    market: marketLabel,
+  });
 
   return (
     <div className="space-y-4">
@@ -57,8 +78,13 @@ export function ReportDetail({
           <div>
             <p className="text-sm text-text-muted">{dateLabel}</p>
             <p className="mt-1 text-2xl font-medium text-text-primary">
-              <bdi>{formatCurrency(summary?.total_savings ?? 0, fullLocale)}</bdi>
+              <bdi>{formatCurrency(totalSavings, fullLocale)}</bdi>
             </p>
+            {market !== null && (
+              <p className="mt-2 text-xs text-text-muted">
+                <bdi>{inlineText}</bdi>
+              </p>
+            )}
           </div>
           <button
             type="button"
