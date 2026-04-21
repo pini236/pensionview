@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Resolve household root: use cached ID if present, otherwise create
     // a "PensionView" folder under the user's Drive root and persist its ID.
+    // Supabase admin client returns `any`; the cast keeps the null branch precise below.
     let rootFolderId = selfProfile.google_drive_folder_id as string | null;
     if (!rootFolderId) {
       rootFolderId = await resolveFolder({

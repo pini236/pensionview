@@ -185,3 +185,5 @@ None. Ready to plan.
 - Per-month subfolders (`<root>/<profile.name>/<YYYY-MM>/`) if folders get noisy.
 - Settings UI to show "X reports archived in Drive" and a "Reconnect" button.
 - Persisted subfolder ID cache (Approach B from brainstorming) if Drive lookup latency ever becomes a bottleneck.
+- Audit Supabase write call sites in the pipeline routes — `update().eq()` results are routinely discarded across the pipeline. A failed DB write on `drive_file_id` (or other persistence steps) currently lands as a silent gap (file in Drive, no row link) instead of triggering pipeline retry. Codebase-wide cleanup, not specific to this feature.
+- Idempotency on `upload_drive` retry — if `uploadPdfToFolder` succeeds but `triggerNextStep` fails, the pipeline retries this step and a duplicate file is uploaded. Cheap fix: gate the upload on `report.drive_file_id` being null. Acceptable per the "best-effort" framing; revisit if duplicates become visible to users.

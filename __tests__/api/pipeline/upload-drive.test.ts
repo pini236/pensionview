@@ -71,6 +71,8 @@ vi.mock("@/lib/supabase/admin", () => ({
       }
       if (table === "profiles") {
         return {
+          // NOTE: chain shape mirrors the route's exact query (.select.eq.eq.is.maybeSingle).
+          // If you add/remove a filter in the route, update this chain or the test will break confusingly.
           select: () => ({
             eq: () => ({
               eq: () => ({
@@ -109,10 +111,6 @@ function makeRequest() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  triggerNextStep.mockReset();
-  failQueue.mockReset();
-  driveFilesList.mockReset();
-  driveFilesCreate.mockReset();
   selfProfileRow = null;
   updatedProfile = null;
   updatedReport = null;
@@ -127,6 +125,21 @@ describe("upload-drive route", () => {
       google_refresh_token: null,
       google_drive_folder_id: null,
     };
+
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.skipped).toMatch(/no Google token/i);
+    expect(driveFilesList).not.toHaveBeenCalled();
+    expect(driveFilesCreate).not.toHaveBeenCalled();
+    expect(triggerNextStep).toHaveBeenCalledWith("report-id", "upload_drive", 10);
+    expect(failQueue).not.toHaveBeenCalled();
+  });
+
+  it("skips when no self profile exists in the household", async () => {
+    // selfProfileRow stays null (the beforeEach default) → maybeSingle returns { data: null }
+    selfProfileRow = null;
 
     const res = await POST(makeRequest());
     const body = await res.json();
