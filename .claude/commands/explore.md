@@ -42,9 +42,9 @@ Once all 6 managers return, dispatch `product-lead` (single Task call) with:
 > Return: the top 5-7 pitches with a 1-line "why this one" each, and a list of any merges/conflicts you flagged.
 
 ## Step 5: Mirror new pitches to Monday
-For each new pitch file, create a corresponding item on the **PensionView Ideas** board. Set the Status column to match the file's `status:` field (likely `pitched`). Write the `monday_item: <url>` back into the pitch file's frontmatter so the cross-link is bidirectional.
+Run `scripts/monday/mirror-pitches.sh`. It is idempotent — pitches that already have a `monday_item:` URL in their frontmatter are skipped, so re-runs are safe. The script writes the resulting Monday URL back into each new pitch's frontmatter so the cross-link is bidirectional.
 
-(If Monday wiring isn't operational yet — Phase 4 not done — skip this step and note "Monday mirror skipped — wiring not configured" in the meeting log.)
+If the script fails (token missing, API error, network), surface the error to the user and continue the ceremony — do not abort. Note the failure in the meeting log's `monday_mirror:` frontmatter field.
 
 ## Step 6: Write the meeting log
 Save to `docs/company/meetings/explore/YYYY-MM-DD.md`. Include:
