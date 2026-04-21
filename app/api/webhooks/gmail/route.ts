@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import { processGmailNotification } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { startReportPipeline } from "@/lib/workflow/start";
+import { logEvent } from "@/lib/observability";
 
 // ---------------------------------------------------------------------------
 // Pub/Sub OIDC verification
@@ -78,10 +79,11 @@ export async function POST(request: NextRequest) {
       try {
         await startReportPipeline({ reportId: report.id, isBackfill: false });
       } catch (startError) {
-        console.error(
-          `startReportPipeline failed for report ${report.id}:`,
-          startError
-        );
+        logEvent("pipeline.start_failed", {
+          feature: "pipeline",
+          reportId: report.id,
+          error: startError,
+        });
         await admin
           .from("reports")
           .update({ status: "failed" })
