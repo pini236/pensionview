@@ -9,17 +9,17 @@ Same as `/standup`.
 
 ## Step 2: Gather promising pitches
 Dispatch `product-lead` with:
-> /triage. Find every pitch in `docs/company/ideas/` whose status is `promising` (i.e., domain review complete with no VETO). For each, read the file and prepare a 1-paragraph summary with:
+> /triage. Find every pitch in `docs/company/ideas/` whose status is `promising` (i.e., domain review complete with no VETO). For each, read the file's frontmatter for status/metadata; read the body from the Monday Doc using `export_markdown_from_doc(docId: <monday_doc_id>) { success markdown error }` via `scripts/monday/mq.sh` — the repo file body is empty after sync, the canonical body is in Monday. Prepare a 1-paragraph summary with:
 > - The idea (1 sentence)
 > - Why it matters (1 sentence)
-> - Domain review outcome (LGTM / CONCERNS — quote the reasoning)
+> - Domain review outcome (LGTM / CONCERNS — quote the reasoning from the Monday Doc)
 > - Your recommendation: promote / park / kill, with reasoning
 >
 > Return the list. If there are no `promising` pitches, say so.
 
 ## Step 3: Walk the user through them, one by one
 For each pitch the `product-lead` returns, present it to the user with the recommendation, and ask: **promote / park / kill?**
-- If user wants to know more, read the full pitch file aloud (or the relevant section).
+- If user wants to know more, read the pitch body from the Monday Doc using `export_markdown_from_doc(docId: <monday_doc_id>)` and surface the relevant section. The repo file is frontmatter-only after sync — the body lives in Monday.
 - If user disagrees with `product-lead`'s recommendation, that disagreement is fine — CEO decides. If CEO overrides a domain expert's CONCERNS to promote anyway, log the override in `docs/company/decisions/YYYY-MM-DD-<slug>.md`.
 
 ## Step 4: Apply the decisions

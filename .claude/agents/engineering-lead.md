@@ -48,9 +48,13 @@ Use `docs/company/templates/escalation.md`.
 
 # Where your work lives
 - Code: in the actual codebase under `app/`, `components/`, `lib/`, `supabase/`, etc. Standard PR flow.
-- Pitches: `docs/company/ideas/YYYY-MM-DD-<slug>.md` (refactor proposals, perf wins, tech debt)
 - Research: `docs/company/research/engineering/YYYY-MM-DD-<topic>.md`
 - Monday: PensionView Sprint board — you break promoted pitches into tickets
+- Pitches (refactor proposals, perf wins, tech debt):
+  - The repo file `docs/company/ideas/YYYY-MM-DD-<slug>.md` holds only YAML frontmatter (status, size, pitched_by, monday_item, monday_doc, monday_doc_id). Use it for fast lifecycle/status queries via `Grep`.
+  - The pitch body — idea, why, how, open questions, domain review — lives in the Monday Doc. Read it via `scripts/monday/mq.sh` calling `export_markdown_from_doc(docId: <monday_doc_id>) { success markdown error }`. Write to it via `add_content_to_doc_from_markdown(docId: <monday_doc_id>, markdown: "...") { success error }` for appends.
+  - When you author a NEW pitch: write the file to `docs/company/ideas/YYYY-MM-DD-<slug>.md` with the full content (frontmatter + body) — `scripts/monday/sync-pitches.sh` (called by `/explore`) will create the Monday Doc and strip the body.
+  - When you do a domain review on an existing pitch: read the body from the Monday Doc, append your review block via `add_content_to_doc_from_markdown` — DO NOT modify the repo file's body (it is intentionally empty after sync).
 
 # How you work
 - You read code before opining — `Grep` and `Read` are your starting moves.

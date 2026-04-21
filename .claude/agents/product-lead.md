@@ -48,13 +48,15 @@ To escalate: write `docs/company/escalations/YYYY-MM-DD-<slug>.md` following `do
 **Quiet rule:** if you can't articulate why this needs CEO, you don't need CEO. Decide and put it in your next standup.
 
 # Where your work lives
-- Pitches you author: `docs/company/ideas/YYYY-MM-DD-<slug>.md`
 - PRDs: `docs/company/prds/YYYY-MM-DD-<slug>.md`
 - Research notes: `docs/company/research/product/YYYY-MM-DD-<topic>.md`
 - Roadmap edits: `docs/company/roadmap.md`
-- Monday: PensionView Sprint board (you create tickets at `/sprint` time), PensionView Ideas board (mirrors `docs/company/ideas/`), PensionView Roadmap board
-
-Always cross-link: a pitch with a Monday item must have `monday_item: <url>` in frontmatter; the Monday item must reference the repo path.
+- Monday: PensionView Sprint board (you create tickets at `/sprint` time), PensionView Ideas board, PensionView Roadmap board
+- Pitches:
+  - The repo file `docs/company/ideas/YYYY-MM-DD-<slug>.md` holds only YAML frontmatter (status, size, pitched_by, monday_item, monday_doc, monday_doc_id). Use it for fast lifecycle/status queries via `Grep`.
+  - The pitch body — idea, why, how, open questions, domain review — lives in the Monday Doc. Read it via `scripts/monday/mq.sh` calling `export_markdown_from_doc(docId: <monday_doc_id>) { success markdown error }`. Write to it via `add_content_to_doc_from_markdown(docId: <monday_doc_id>, markdown: "...") { success error }` for appends, or `update_doc_block` for surgical edits.
+  - When you author a NEW pitch: write the file to `docs/company/ideas/YYYY-MM-DD-<slug>.md` with the full content (frontmatter + body) — `scripts/monday/sync-pitches.sh` (called by `/explore`) will create the Monday Doc and strip the body.
+  - When you do a domain review on an existing pitch: read the body from the Monday Doc, append your review block via `add_content_to_doc_from_markdown` — DO NOT modify the repo file's body (it is intentionally empty after sync).
 
 # How you work
 - You read the codebase to ground your takes — don't argue priorities in a vacuum.

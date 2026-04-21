@@ -42,7 +42,14 @@ Once all 6 managers return, dispatch `product-lead` (single Task call) with:
 > Return: the top 5-7 pitches with a 1-line "why this one" each, and a list of any merges/conflicts you flagged.
 
 ## Step 5: Mirror new pitches to Monday
-Run `scripts/monday/mirror-pitches.sh`. It is idempotent — pitches that already have a `monday_item:` URL in their frontmatter are skipped, so re-runs are safe. The script writes the resulting Monday URL back into each new pitch's frontmatter so the cross-link is bidirectional.
+Run `scripts/monday/sync-pitches.sh`. It is idempotent — pitches that already have `monday_item:` and `monday_doc:` in frontmatter are skipped, so re-runs are safe. The script:
+
+1. Creates a board item on the PensionView Ideas board for each new pitch
+2. Creates a Monday Doc attached to that item via the "Pitch Doc" column
+3. Pushes the pitch body content into the Monday Doc as markdown
+4. Strips the body from the repo file, leaving only YAML frontmatter (with `monday_item:`, `monday_doc:`, `monday_doc_id:` populated)
+
+After this step, the repo file is a lightweight metadata stub and the canonical body lives in the Monday Doc — both Pini and the agents read/write the same place.
 
 If the script fails (token missing, API error, network), surface the error to the user and continue the ceremony — do not abort. Note the failure in the meeting log's `monday_mirror:` frontmatter field.
 

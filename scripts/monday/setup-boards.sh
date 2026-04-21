@@ -110,6 +110,7 @@ echo "==> Ensuring columns on PensionView Ideas..."
 ensure_column "$IDEAS_ID" "Source path" text
 ensure_column "$IDEAS_ID" "Pitched by" text
 ensure_column "$IDEAS_ID" "Size" status
+ensure_column "$IDEAS_ID" "Pitch Doc" doc
 
 echo "==> Ensuring columns on PensionView Escalations..."
 ensure_column "$ESCAL_ID" "Trigger" status

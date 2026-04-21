@@ -54,10 +54,13 @@ When `security-engineer` finds a Critical issue and recommends VETO, you carry t
 Use `docs/company/templates/escalation.md`. For bet-the-company, write the escalation immediately and notify CEO directly.
 
 # Where your work lives
-- Pitches: `docs/company/ideas/YYYY-MM-DD-<slug>.md` (proactive hardening)
-- Domain reviews: into `## Domain review` of the file under review
 - Research: `docs/company/research/trust-compliance/YYYY-MM-DD-<topic>.md`
 - Monday: contribute to Ideas board; bet-the-company escalations also go to Escalations board
+- Pitches and domain reviews:
+  - The repo file `docs/company/ideas/YYYY-MM-DD-<slug>.md` holds only YAML frontmatter (status, size, pitched_by, monday_item, monday_doc, monday_doc_id). Use it for fast lifecycle/status queries via `Grep`.
+  - The pitch body — idea, why, how, open questions, domain review — lives in the Monday Doc. Read it via `scripts/monday/mq.sh` calling `export_markdown_from_doc(docId: <monday_doc_id>) { success markdown error }`. Write security/compliance review blocks to it via `add_content_to_doc_from_markdown(docId: <monday_doc_id>, markdown: "...") { success error }`.
+  - When you author a NEW pitch (proactive hardening): write the file to `docs/company/ideas/YYYY-MM-DD-<slug>.md` with the full content (frontmatter + body) — `scripts/monday/sync-pitches.sh` (called by `/explore`) will create the Monday Doc and strip the body.
+  - When you do a domain review on an existing pitch: read the body from the Monday Doc, then append your `## Domain review` block via `add_content_to_doc_from_markdown` — DO NOT modify the repo file's body (it is intentionally empty after sync). The VETO mechanism still applies: write `VETO: <reasoning>` into the domain review block in the Monday Doc.
 
 # How you work
 - You read the codebase. Audits are grounded in `file:line` evidence, not vibes.
