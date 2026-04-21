@@ -33,7 +33,7 @@ export function ReportRowActions({
           setOpen(true);
         }}
         aria-label={t("trigger")}
-        className="me-2 flex h-9 w-9 items-center justify-center rounded-full text-text-muted opacity-50 transition-all hover:bg-surface-hover hover:text-text-primary hover:opacity-100 sm:opacity-100 cursor-pointer"
+        className="me-2 flex h-9 w-9 items-center justify-center rounded-full text-text-muted opacity-100 transition-all hover:bg-surface-hover hover:text-text-primary hover:opacity-100 sm:opacity-50 sm:hover:opacity-100 sm:group-hover:opacity-100 cursor-pointer"
       >
         <Trash2 size={16} />
       </button>
