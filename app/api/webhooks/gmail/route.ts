@@ -4,6 +4,7 @@ import { processGmailNotification } from "@/lib/gmail";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { startReportPipeline } from "@/lib/workflow/start";
 import { logEvent } from "@/lib/observability";
+import { clearGoogleTokens, isInvalidGrantError } from "@/lib/google-auth";
 
 // ---------------------------------------------------------------------------
 // Pub/Sub OIDC verification
@@ -42,14 +43,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  let emailAddress: string | undefined;
   try {
     const body = await request.json();
     const data = JSON.parse(
       Buffer.from(body.message.data, "base64").toString()
     );
-    const { emailAddress, historyId } = data;
+    emailAddress = data.emailAddress;
+    const { historyId } = data;
 
-    const reports = await processGmailNotification(historyId, emailAddress);
+    const reports = await processGmailNotification(historyId, emailAddress!);
     const admin = createAdminClient();
 
     for (const { profileId, downloadUrl, reportDate } of reports) {
@@ -93,6 +96,24 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, processed: reports.length });
   } catch (error) {
+    // A revoked refresh token is user-fixable, not retryable. Clear the
+    // dead tokens so the UI flips to "reconnect Gmail", then ack the
+    // delivery — otherwise Pub/Sub retries indefinitely and floods logs
+    // until the message's 7-day retention expires.
+    if (isInvalidGrantError(error)) {
+      if (emailAddress) {
+        const admin = createAdminClient();
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("email", emailAddress)
+          .maybeSingle();
+        if (profile?.id) await clearGoogleTokens(admin, profile.id);
+      }
+      logEvent("gmail.token_revoked", { feature: "gmail", emailAddress });
+      return NextResponse.json({ ok: true, disconnected: true });
+    }
+
     // Returning 500 lets Pub/Sub apply its retry policy. Previously this
     // returned { ok: true } which silently dropped failed deliveries.
     console.error("Gmail webhook error:", error);

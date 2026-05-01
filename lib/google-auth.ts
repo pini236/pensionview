@@ -3,6 +3,43 @@ import type { OAuth2Client } from "google-auth-library";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encrypt, decrypt } from "@/lib/crypto";
 
+/**
+ * Detects an OAuth refresh-token revocation. Google returns HTTP 400 with
+ * { error: "invalid_grant" } on expired/revoked refresh tokens — and on
+ * nothing else we care about retrying. Used at call sites to distinguish
+ * "user needs to reconnect Google" from transient API errors.
+ */
+export function isInvalidGrantError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as {
+    message?: string;
+    response?: { data?: { error?: string } };
+  };
+  if (e.response?.data?.error === "invalid_grant") return true;
+  return typeof e.message === "string" && e.message.includes("invalid_grant");
+}
+
+/**
+ * Wipes persisted Google credentials for a profile so the UI flips to
+ * "not connected" and the user is prompted to reconnect. Call after
+ * detecting invalid_grant — leaving stale tokens in place just wastes
+ * quota on doomed refresh attempts.
+ */
+export async function clearGoogleTokens(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string
+): Promise<void> {
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      google_access_token: null,
+      google_refresh_token: null,
+      google_token_expiry: null,
+    })
+    .eq("id", profileId);
+  if (error) console.error("Failed to clear invalid Google tokens:", error);
+}
+
 export function getGoogleOAuth2Client() {
   return new google.auth.OAuth2({
     clientId: process.env.GOOGLE_CLIENT_ID,

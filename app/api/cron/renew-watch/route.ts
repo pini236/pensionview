@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setupGmailWatch } from "@/lib/gmail";
 import { assertVercelCron } from "@/lib/auth-internal";
+import { clearGoogleTokens, isInvalidGrantError } from "@/lib/google-auth";
 
 export async function GET(request: NextRequest) {
   const unauth = assertVercelCron(request);
@@ -15,7 +16,17 @@ export async function GET(request: NextRequest) {
 
     if (profiles) {
       for (const profile of profiles) {
-        await setupGmailWatch(profile.id).catch(console.error);
+        try {
+          await setupGmailWatch(profile.id);
+        } catch (err) {
+          // A revoked token can't be renewed — clear it so Settings
+          // surfaces the reconnect CTA instead of falsely showing
+          // "connected" while the daily renewal silently fails.
+          if (isInvalidGrantError(err)) {
+            await clearGoogleTokens(admin, profile.id);
+          }
+          console.error("setupGmailWatch failed for profile", profile.id, err);
+        }
       }
     }
 

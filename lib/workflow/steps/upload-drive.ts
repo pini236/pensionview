@@ -1,7 +1,11 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FatalError } from "workflow";
-import { getAuthedOAuth2Client } from "@/lib/google-auth";
+import {
+  clearGoogleTokens,
+  getAuthedOAuth2Client,
+  isInvalidGrantError,
+} from "@/lib/google-auth";
 import { uploadPdfToFolder } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -74,12 +78,23 @@ export async function uploadDriveStep({
   // reportId so we never produce `PensionView-null.pdf` if extraction also
   // didn't surface a date.
   const filenameSuffix = report.report_date ?? reportId;
-  const driveFileId = await uploadPdfToFolder({
-    drive,
-    parentFolderId: subfolderId,
-    filename: `PensionView-${filenameSuffix}.pdf`,
-    buffer,
-  });
+  let driveFileId: string;
+  try {
+    driveFileId = await uploadPdfToFolder({
+      drive,
+      parentFolderId: subfolderId,
+      filename: `PensionView-${filenameSuffix}.pdf`,
+      buffer,
+    });
+  } catch (err) {
+    if (isInvalidGrantError(err)) {
+      await clearGoogleTokens(admin, selfProfile.id as string);
+      throw new FatalError(
+        "Google connection expired. Reconnect Gmail in Settings and retry the report."
+      );
+    }
+    throw err;
+  }
 
   await admin.from("reports").update({ drive_file_id: driveFileId }).eq("id", reportId);
 
