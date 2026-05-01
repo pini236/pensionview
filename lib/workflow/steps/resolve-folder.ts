@@ -1,7 +1,11 @@
 import { google } from "googleapis";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FatalError } from "workflow";
-import { getAuthedOAuth2Client } from "@/lib/google-auth";
+import {
+  clearGoogleTokens,
+  getAuthedOAuth2Client,
+  isInvalidGrantError,
+} from "@/lib/google-auth";
 import { resolveFolder, profileFolderName } from "@/lib/drive/archive";
 import { markCurrentStep } from "@/lib/workflow/mark-current-step";
 
@@ -59,29 +63,43 @@ export async function resolveDriveFoldersStep({
 
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
-  let rootFolderId = selfProfile.google_drive_folder_id as string | null;
-  if (!rootFolderId) {
-    rootFolderId = await resolveFolder({
+  try {
+    let rootFolderId = selfProfile.google_drive_folder_id as string | null;
+    if (!rootFolderId) {
+      rootFolderId = await resolveFolder({
+        drive,
+        parentFolderId: "root",
+        folderName: ROOT_FOLDER_NAME,
+      });
+      await admin
+        .from("profiles")
+        .update({ google_drive_folder_id: rootFolderId })
+        .eq("id", selfProfile.id);
+    }
+
+    const subfolderId = await resolveFolder({
       drive,
-      parentFolderId: "root",
-      folderName: ROOT_FOLDER_NAME,
+      parentFolderId: rootFolderId,
+      folderName: profileFolderName(
+        ownerProfile.name as string | null,
+        ownerProfile.id as string
+      ),
     });
-    await admin
-      .from("profiles")
-      .update({ google_drive_folder_id: rootFolderId })
-      .eq("id", selfProfile.id);
+
+    return { subfolderId, selfProfileId: selfProfile.id as string };
+  } catch (err) {
+    // Revoked/expired refresh token → no retry will ever succeed. Clear
+    // the dead tokens so Settings surfaces "Reconnect Gmail", and raise
+    // a FatalError with a user-facing message instead of burning two
+    // retries on the same 400.
+    if (isInvalidGrantError(err)) {
+      await clearGoogleTokens(admin, selfProfile.id as string);
+      throw new FatalError(
+        "Google connection expired. Reconnect Gmail in Settings and retry the report."
+      );
+    }
+    throw err;
   }
-
-  const subfolderId = await resolveFolder({
-    drive,
-    parentFolderId: rootFolderId,
-    folderName: profileFolderName(
-      ownerProfile.name as string | null,
-      ownerProfile.id as string
-    ),
-  });
-
-  return { subfolderId, selfProfileId: selfProfile.id as string };
 }
 
 // Google Drive list-then-create is mostly idempotent — default 3 attempts.
